@@ -1,7 +1,10 @@
+import 'dart:ui';
+
+import 'package:bilibili_downloader/widgets/aside_menu.dart';
+import 'package:flutter/material.dart';
 import 'package:bilibili_downloader/pages/download_manage.dart';
 import 'package:bilibili_downloader/pages/home.dart';
-import 'package:bilibili_downloader/widgets/menu_item.dart';
-import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class App extends StatefulWidget {
   const App({Key? key}) : super(key: key);
@@ -22,82 +25,55 @@ class _AppState extends State<App> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       title: "bilibili下载器",
       home: Scaffold(
-        body: Row(children: [
-          Container(
-            width: 240,
-            color: Colors.white70,
-            child: Column(children: [
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Image.network(
-                      'https://www.bilibili.com/favicon.ico',
-                      color: Colors.blue,
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 12, top: 4),
-                      child: Text(
-                        'Bilibili下载器',
-                        style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w900),
-                      ),
-                    )
-                  ],
-                ),
+          backgroundColor: Colors.grey[100],
+          body: Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/menu_bg.jpg'),
+                fit: BoxFit.cover,
               ),
-              Expanded(
-                child: Container(
-                    padding: const EdgeInsets.all(16),
-                    child: ListView(
-                      children: [
-                        MenuItem(
-                          title: '首页',
-                          icon: Icons.home,
-                          isSelected: _currentIndex == 0,
-                          onTap: () {
-                            setState(() {
-                              _currentIndex = 0;
-                            });
-                            _pageController.animateToPage(0,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.ease);
-                          },
-                        ),
-                        MenuItem(
-                          title: '下载管理',
-                          icon: Icons.download,
-                          isSelected: _currentIndex == 1,
-                          onTap: () {
-                            setState(() {
-                              _currentIndex = 1;
-                            });
-                            _pageController.animateToPage(1,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.ease);
-                          },
-                        ),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                  color: Colors.white.withOpacity(0.5),
+                  child: Row(children: [
+                    AsideMenu(
+                      data: [
+                        AsideMenuData(title: '首页', icon: Icons.home),
+                        AsideMenuData(title: '下载管理', icon: Icons.download),
                       ],
-                    )),
-              )
-            ]),
-          ),
-          Expanded(
-              child: PageView(
-            controller: _pageController,
-            scrollDirection: Axis.vertical,
-            physics: const NeverScrollableScrollPhysics(),
-            children: const [HomePage(), DownloadManagePage()],
-          ))
-        ]),
-      ),
+                      selectedIndex: _currentIndex,
+                      onItemTap: (i) {
+                        setState(() {
+                          _currentIndex = i;
+                        });
+                        _pageController.animateToPage(i,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.ease);
+                      },
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          margin: const EdgeInsets.all(12),
+                          child: PageView(
+                            controller: _pageController,
+                            scrollDirection: Axis.vertical,
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: const [HomePage(), DownloadManagePage()],
+                          )),
+                    )
+                  ])),
+            ),
+          )),
     );
   }
 }

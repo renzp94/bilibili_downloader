@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-class MenuItem extends StatelessWidget {
+class AsideMenuItem extends StatelessWidget {
   final GestureTapCallback? onTap;
   final String title;
   final IconData? icon;
   final bool? isSelected;
 
-  const MenuItem(
+  const AsideMenuItem(
       {Key? key, required this.title, this.onTap, this.icon, this.isSelected})
       : super(key: key);
 
@@ -16,7 +16,7 @@ class MenuItem extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: active ? Colors.blue : Colors.transparent,
+        color: active ? Colors.blue : Colors.white.withOpacity(0.3),
         borderRadius: BorderRadius.circular(8),
       ),
       child: ListTile(
@@ -24,12 +24,12 @@ class MenuItem extends StatelessWidget {
         leading: icon != null
             ? Icon(
                 icon,
-                color: active ? Colors.white : Colors.black,
+                color: active ? Colors.white : Colors.black87,
               )
             : null,
         title: Text(
           title,
-          style: TextStyle(color: active ? Colors.white : Colors.black),
+          style: TextStyle(color: active ? Colors.white : Colors.black87),
         ),
       ),
     );
