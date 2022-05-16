@@ -67,8 +67,17 @@ class _AppState extends State<App> {
                           child: PageView(
                             controller: _pageController,
                             scrollDirection: Axis.vertical,
-                            physics: const NeverScrollableScrollPhysics(),
-                            children: const [HomePage(), DownloadManagePage()],
+                            onPageChanged: (int index) {
+                              setState(() {
+                                _currentIndex = index;
+                              });
+                            },
+                            children: [
+                              HomePage(
+                                pageController: _pageController,
+                              ),
+                              const DownloadManagePage()
+                            ],
                           )),
                     )
                   ])),

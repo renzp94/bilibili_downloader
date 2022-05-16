@@ -1,24 +1,30 @@
-import 'package:bilibili_downloader/api/dio.dart';
 import 'package:dio/dio.dart' as Dio;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../api/video.dart';
+
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  final PageController pageController;
+  const HomePage({Key? key, required this.pageController}) : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with AutomaticKeepAliveClientMixin {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late String _url;
   List<dynamic> _list = [];
   List<dynamic> _checkedList = [];
 
-  void fetchVideoList(String url) async {
+  // 根据视频url获取视频列表
+  void onSearch(String url) async {
     if (url.isNotEmpty) {
+      const urlPrefix = 'https://www.bilibili.com/video/';
       // 判断是否为bilibili网站
-      if (!url.contains('https://www.bilibili.com/video/')) {
+      if (!url.contains(urlPrefix)) {
         Get.snackbar('', '请输入正确的bilibili视频链接',
             titleText: Text(
               '警告',
@@ -37,17 +43,18 @@ class _HomePageState extends State<HomePage> {
       }
 
       String bvid = url
-          .substring('https://www.bilibili.com/video/'.length, url.indexOf("?"))
+          .substring(urlPrefix.length,
+              url.contains("?") ? url.indexOf("?") : url.length)
           .replaceAll('/', '');
 
-      Dio.Response res = await dio
-          .get('/x/web-interface/view', queryParameters: {"bvid": bvid});
+      Dio.Response res = await fetchVideoList(bvid);
 
       dynamic data = res.data['data'];
-      // 分p
-      if (data['videos'] > 1) {
-        dynamic list = data['pages'].asMap().keys;
-        setState(() {
+      setState(() {
+        _url = url;
+        // 分p
+        if (data['videos'] > 1) {
+          dynamic list = data['pages'].asMap().keys;
           _list = list
               .map((i) => {
                     "bvid": bvid,
@@ -59,9 +66,7 @@ class _HomePageState extends State<HomePage> {
               .toList();
 
           _checkedList = list.map((i) => data['pages'][i]['cid']).toList();
-        });
-      } else {
-        setState(() {
+        } else {
           _list = [
             {
               "bvid": bvid,
@@ -72,10 +77,28 @@ class _HomePageState extends State<HomePage> {
             }
           ];
           _checkedList = [data['pages'][0]['cid']];
-        });
-      }
+        }
+      });
     }
   }
+
+  void onDownload() async {
+    List<dynamic> list =
+        _list.where((item) => _checkedList.contains(item['cid'])).toList();
+
+    for (var item in list) {
+      Dio.Response res =
+          await fetchDownloadVideoInfo(item['bvid'], item['cid']);
+      String uri = res.data['data']['durl'][0]['url'];
+      downloadVideo(uri, item['title']);
+    }
+
+    widget.pageController.animateToPage(1,
+        duration: const Duration(milliseconds: 300), curve: Curves.ease);
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
@@ -83,101 +106,149 @@ class _HomePageState extends State<HomePage> {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 24, left: 24, right: 24),
-          child: TextField(
-            decoration: const InputDecoration(
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                  borderSide: BorderSide(color: Colors.black)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                  borderSide: BorderSide(color: Colors.blue)),
-              hintText: '请输入视频链接',
-            ),
-            onSubmitted: fetchVideoList,
-          ),
+          child: Row(children: [
+            Expanded(
+                child: TextField(
+              decoration: const InputDecoration(
+                enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(color: Colors.black)),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    borderSide: BorderSide(color: Colors.blue)),
+                hintText: '请输入视频链接',
+              ),
+              onSubmitted: onSearch,
+            )),
+            Container(
+              height: 54,
+              padding: const EdgeInsets.only(left: 12),
+              child: ElevatedButton(
+                onPressed: _checkedList.isNotEmpty ? onDownload : null,
+                child: const Text('下载'),
+              ),
+            )
+          ]),
         ),
         Expanded(
             child: Padding(
-          padding: const EdgeInsets.only(top: 12, left: 12),
-          child: ListView.builder(
-              itemBuilder: (BuildContext ctx, int index) {
-                dynamic item = _list[index];
-                return InkWell(
-                  onTap: () {
-                    setState(() {
-                      if (_checkedList.contains(item['cid'])) {
-                        _checkedList.remove(item['cid']);
-                      } else {
-                        _checkedList.add(item['cid']);
-                      }
-                    });
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(
-                        top: 12, left: 12, bottom: 12, right: 24),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 10,
-                          spreadRadius: 0.1,
-                          color: Colors.grey.withOpacity(0.2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Checkbox(
-                              hoverColor: Colors.transparent,
-                              fillColor: MaterialStateProperty.all(
-                                  Colors.white.withOpacity(0.5)),
-                              checkColor: Colors.blue,
-                              value: _checkedList.contains(item['cid']),
-                              onChanged: (v) {
-                                if (v != null) {
-                                  setState(() {
-                                    if (_checkedList.contains(item['cid'])) {
-                                      _checkedList.remove(item['cid']);
-                                    } else {
-                                      _checkedList.add(item['cid']);
-                                    }
-                                  });
-                                }
-                              }),
-                          Expanded(
-                              child: Padding(
-                            padding: const EdgeInsets.only(left: 12),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      item["pic"],
-                                      height: 100,
-                                      width: 100,
-                                      fit: BoxFit.cover,
-                                    )),
-                                Expanded(
-                                    flex: 1,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(left: 12),
-                                      child: Text(item["title"]),
-                                    ))
-                              ],
-                            ),
-                          ))
-                        ]),
-                  ),
-                );
-              },
-              primary: false,
-              itemCount: _list.length),
-        ))
+                padding: const EdgeInsets.only(top: 12, left: 12),
+                child: Column(
+                  children: [
+                    // Padding(
+                    //   padding: const EdgeInsets.only(left: 12, bottom: 4),
+                    //   child: Row(
+                    //     children: [
+                    //       Text(
+                    //           "共${_list.length}个视频，已选中${_checkedList.length}个"),
+                    //       SizedBox(
+                    //         child: CheckboxListTile(
+                    //             value: _checkedList.length == _list.length,
+                    //             onChanged: (onChanged) {
+                    //               setState(() {
+                    //                 _checkedList = onChanged!
+                    //                     ? _list.map((i) => i['cid']).toList()
+                    //                     : [];
+                    //               });
+                    //             },
+                    //             title: const Text('全选')),
+                    //         width: 110,
+                    //       )
+                    //     ],
+                    //   ),
+                    // ),
+                    Expanded(
+                      child: ListView.builder(
+                          itemBuilder: (BuildContext ctx, int index) {
+                            dynamic item = _list[index];
+                            return InkWell(
+                              onTap: () {
+                                setState(() {
+                                  if (_checkedList.contains(item['cid'])) {
+                                    _checkedList.remove(item['cid']);
+                                  } else {
+                                    _checkedList.add(item['cid']);
+                                  }
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(
+                                    top: 12, left: 12, bottom: 12, right: 24),
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      blurRadius: 10,
+                                      spreadRadius: 0.1,
+                                      color: Colors.grey.withOpacity(0.2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Checkbox(
+                                          hoverColor: Colors.transparent,
+                                          fillColor: MaterialStateProperty.all(
+                                              Colors.white.withOpacity(0.5)),
+                                          checkColor: Colors.blue,
+                                          value: _checkedList
+                                              .contains(item['cid']),
+                                          onChanged: (v) {
+                                            if (v != null) {
+                                              setState(() {
+                                                if (_checkedList
+                                                    .contains(item['cid'])) {
+                                                  _checkedList
+                                                      .remove(item['cid']);
+                                                } else {
+                                                  _checkedList.add(item['cid']);
+                                                }
+                                              });
+                                            }
+                                          }),
+                                      Expanded(
+                                          child: Padding(
+                                        padding:
+                                            const EdgeInsets.only(left: 12),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: [
+                                            ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: Image.network(
+                                                  item["pic"],
+                                                  height: 100,
+                                                  width: 100,
+                                                  fit: BoxFit.cover,
+                                                )),
+                                            Expanded(
+                                                flex: 1,
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          left: 12),
+                                                  child: Text(item["title"]),
+                                                ))
+                                          ],
+                                        ),
+                                      ))
+                                    ]),
+                              ),
+                            );
+                          },
+                          primary: false,
+                          itemCount: _list.length),
+                    )
+                  ],
+                )))
       ],
     );
   }

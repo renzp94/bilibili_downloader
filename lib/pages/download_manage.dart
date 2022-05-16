@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 
-class DownloadManagePage extends StatelessWidget {
+class DownloadManagePage extends StatefulWidget {
   const DownloadManagePage({Key? key}) : super(key: key);
 
   @override
+  State<DownloadManagePage> createState() => _DownloadManagePageState();
+}
+
+class _DownloadManagePageState extends State<DownloadManagePage> {
+  @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Text('DownloadManagePage'),
-      ),
+    return const Center(
+      child: Text('DownloadManagePage'),
     );
   }
 }
