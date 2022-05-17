@@ -1,6 +1,9 @@
+import 'package:bilibili_downloader/constant.dart';
+import 'package:bilibili_downloader/models/video.dart';
 import 'package:dio/dio.dart' as Dio;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../api/video.dart';
 
@@ -16,15 +19,15 @@ class _HomePageState extends State<HomePage>
     with AutomaticKeepAliveClientMixin {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late String _url;
-  List<dynamic> _list = [];
+  List<DownloadVideoInfo> _list = [];
   List<dynamic> _checkedList = [];
 
   // 根据视频url获取视频列表
   void onSearch(String url) async {
     if (url.isNotEmpty) {
-      const urlPrefix = 'https://www.bilibili.com/video/';
+      print(videoUrlPrefix);
       // 判断是否为bilibili网站
-      if (!url.contains(urlPrefix)) {
+      if (!url.contains(videoUrlPrefix)) {
         Get.snackbar('', '请输入正确的bilibili视频链接',
             titleText: Text(
               '警告',
@@ -43,7 +46,7 @@ class _HomePageState extends State<HomePage>
       }
 
       String bvid = url
-          .substring(urlPrefix.length,
+          .substring(videoUrlPrefix.length,
               url.contains("?") ? url.indexOf("?") : url.length)
           .replaceAll('/', '');
 
@@ -56,25 +59,23 @@ class _HomePageState extends State<HomePage>
         if (data['videos'] > 1) {
           dynamic list = data['pages'].asMap().keys;
           _list = list
-              .map((i) => {
-                    "bvid": bvid,
-                    "aid": data['aid'],
-                    "pic": data['pic'],
-                    "cid": data['pages'][i]['cid'],
-                    'title': "P${i}_${data['pages'][i]['part']}",
-                  })
+              .map<DownloadVideoInfo>((i) => DownloadVideoInfo(
+                  bvid: bvid,
+                  aid: data['aid'],
+                  pic: data['pic'],
+                  cid: data['pages'][i]['cid'],
+                  title: "P${i}_${data['pages'][i]['part']}"))
               .toList();
 
           _checkedList = list.map((i) => data['pages'][i]['cid']).toList();
         } else {
           _list = [
-            {
-              "bvid": bvid,
-              "aid": data['aid'],
-              "pic": data['pic'],
-              "cid": data['pages'][0]['cid'],
-              "title": data['title'],
-            }
+            DownloadVideoInfo(
+                bvid: bvid,
+                aid: data['aid'],
+                pic: data['pic'],
+                cid: data['pages'][0]['cid'],
+                title: data['title'])
           ];
           _checkedList = [data['pages'][0]['cid']];
         }
@@ -83,15 +84,23 @@ class _HomePageState extends State<HomePage>
   }
 
   void onDownload() async {
-    List<dynamic> list =
-        _list.where((item) => _checkedList.contains(item['cid'])).toList();
+    List<DownloadVideoInfo> list =
+        _list.where((item) => _checkedList.contains(item.cid)).toList();
 
+    Box<DownloadVideoInfo> db = Hive.box(downloadBoxName);
+    List<int> cidList = db.values.map((e) => e.cid).toList();
     for (var item in list) {
-      Dio.Response res =
-          await fetchDownloadVideoInfo(item['bvid'], item['cid']);
-      String uri = res.data['data']['durl'][0]['url'];
-      downloadVideo(uri, item['title']);
+      if (!cidList.contains(item.cid)) {
+        db.add(item);
+      }
     }
+    // for (var item in list) {
+    //   Dio.Response res =
+    //       await fetchDownloadVideoInfo(item['bvid'], item['cid']);
+    //   String uri = res.data['data']['durl'][0]['url'];
+    //   print(uri);
+    //   downloadVideo(uri, item['title']);
+    // }
 
     widget.pageController.animateToPage(1,
         duration: const Duration(milliseconds: 300), curve: Curves.ease);
@@ -160,14 +169,14 @@ class _HomePageState extends State<HomePage>
                     Expanded(
                       child: ListView.builder(
                           itemBuilder: (BuildContext ctx, int index) {
-                            dynamic item = _list[index];
+                            DownloadVideoInfo item = _list[index];
                             return InkWell(
                               onTap: () {
                                 setState(() {
-                                  if (_checkedList.contains(item['cid'])) {
-                                    _checkedList.remove(item['cid']);
+                                  if (_checkedList.contains(item.cid)) {
+                                    _checkedList.remove(item.cid);
                                   } else {
-                                    _checkedList.add(item['cid']);
+                                    _checkedList.add(item.cid);
                                   }
                                 });
                               },
@@ -195,17 +204,16 @@ class _HomePageState extends State<HomePage>
                                           fillColor: MaterialStateProperty.all(
                                               Colors.white.withOpacity(0.5)),
                                           checkColor: Colors.blue,
-                                          value: _checkedList
-                                              .contains(item['cid']),
+                                          value:
+                                              _checkedList.contains(item.cid),
                                           onChanged: (v) {
                                             if (v != null) {
                                               setState(() {
                                                 if (_checkedList
-                                                    .contains(item['cid'])) {
-                                                  _checkedList
-                                                      .remove(item['cid']);
+                                                    .contains(item.cid)) {
+                                                  _checkedList.remove(item.cid);
                                                 } else {
-                                                  _checkedList.add(item['cid']);
+                                                  _checkedList.add(item.cid);
                                                 }
                                               });
                                             }
@@ -224,7 +232,7 @@ class _HomePageState extends State<HomePage>
                                                 borderRadius:
                                                     BorderRadius.circular(8),
                                                 child: Image.network(
-                                                  item["pic"],
+                                                  item.pic,
                                                   height: 100,
                                                   width: 100,
                                                   fit: BoxFit.cover,
@@ -235,7 +243,7 @@ class _HomePageState extends State<HomePage>
                                                   padding:
                                                       const EdgeInsets.only(
                                                           left: 12),
-                                                  child: Text(item["title"]),
+                                                  child: Text(item.title),
                                                 ))
                                           ],
                                         ),

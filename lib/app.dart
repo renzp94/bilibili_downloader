@@ -67,6 +67,7 @@ class _AppState extends State<App> {
                           child: PageView(
                             controller: _pageController,
                             scrollDirection: Axis.vertical,
+                            physics: const NeverScrollableScrollPhysics(),
                             onPageChanged: (int index) {
                               setState(() {
                                 _currentIndex = index;
