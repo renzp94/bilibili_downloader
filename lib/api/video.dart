@@ -7,8 +7,14 @@ Future<Response<dynamic>> fetchVideoList(String bvid) {
 }
 
 // 下载视频
-Future<Response<dynamic>> downloadVideo(String uri, String filename) {
+Future<Response<dynamic>> downloadVideo(
+    {required String uri,
+    required String filename,
+    CancelToken? cancelToken,
+    Function(int, int)? onReceiveProgress}) {
   return Dio().download(uri, './biliDown/$filename.flv',
+      onReceiveProgress: onReceiveProgress,
+      cancelToken: cancelToken,
       options: Options(responseType: ResponseType.stream, headers: {
         'Referer': "https://api.bilibili.com",
         'User-Agent':

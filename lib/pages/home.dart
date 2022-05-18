@@ -64,7 +64,9 @@ class _HomePageState extends State<HomePage>
                   aid: data['aid'],
                   pic: data['pic'],
                   cid: data['pages'][i]['cid'],
-                  title: "P${i}_${data['pages'][i]['part']}"))
+                  title: "P${i}_${data['pages'][i]['part']}",
+                  process: 0,
+                  status: i < defaultMaxDownloadCount ? 'downloading' : 'wait'))
               .toList();
 
           _checkedList = list.map((i) => data['pages'][i]['cid']).toList();
@@ -75,7 +77,9 @@ class _HomePageState extends State<HomePage>
                 aid: data['aid'],
                 pic: data['pic'],
                 cid: data['pages'][0]['cid'],
-                title: data['title'])
+                title: data['title'],
+                process: 0,
+                status: 'downloading')
           ];
           _checkedList = [data['pages'][0]['cid']];
         }
@@ -87,21 +91,13 @@ class _HomePageState extends State<HomePage>
     List<DownloadVideoInfo> list =
         _list.where((item) => _checkedList.contains(item.cid)).toList();
 
-    Box<DownloadVideoInfo> db = Hive.box(downloadBoxName);
+    Box<DownloadVideoInfo> db = Hive.box<DownloadVideoInfo>(downloadBoxName);
     List<int> cidList = db.values.map((e) => e.cid).toList();
     for (var item in list) {
       if (!cidList.contains(item.cid)) {
         db.add(item);
       }
     }
-    // for (var item in list) {
-    //   Dio.Response res =
-    //       await fetchDownloadVideoInfo(item['bvid'], item['cid']);
-    //   String uri = res.data['data']['durl'][0]['url'];
-    //   print(uri);
-    //   downloadVideo(uri, item['title']);
-    // }
-
     widget.pageController.animateToPage(1,
         duration: const Duration(milliseconds: 300), curve: Curves.ease);
   }
@@ -125,7 +121,7 @@ class _HomePageState extends State<HomePage>
                 focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(8)),
                     borderSide: BorderSide(color: Colors.blue)),
-                hintText: '请输入视频链接',
+                hintText: '请输入视频链接，按回车键搜索',
               ),
               onSubmitted: onSearch,
             )),
