@@ -216,8 +216,7 @@ class _HomePageState extends State<HomePage>
                                           }),
                                       Expanded(
                                           child: Padding(
-                                        padding:
-                                            const EdgeInsets.only(left: 12),
+                                        padding: const EdgeInsets.only(left: 4),
                                         child: Row(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
@@ -230,7 +229,7 @@ class _HomePageState extends State<HomePage>
                                                 child: Image.network(
                                                   item.pic,
                                                   height: 100,
-                                                  width: 100,
+                                                  width: 140,
                                                   fit: BoxFit.cover,
                                                 )),
                                             Expanded(

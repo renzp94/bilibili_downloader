@@ -146,7 +146,7 @@ class _DownloadManagePageState extends State<DownloadManagePage>
                                               child: Image.network(
                                                 item.pic,
                                                 height: 100,
-                                                width: 100,
+                                                width: 140,
                                                 fit: BoxFit.cover,
                                               )),
                                           Expanded(
