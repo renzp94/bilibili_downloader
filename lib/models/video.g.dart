@@ -25,13 +25,14 @@ class DownloadVideoInfoAdapter extends TypeAdapter<DownloadVideoInfo> {
       uri: fields[5] as String?,
       process: fields[6] == null ? 0 : fields[6] as double?,
       status: fields[7] == null ? 'wait' : fields[7] as String?,
+      cancelToken: fields[8] as CancelToken?,
     );
   }
 
   @override
   void write(BinaryWriter writer, DownloadVideoInfo obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.bvid)
       ..writeByte(1)
@@ -47,7 +48,9 @@ class DownloadVideoInfoAdapter extends TypeAdapter<DownloadVideoInfo> {
       ..writeByte(6)
       ..write(obj.process)
       ..writeByte(7)
-      ..write(obj.status);
+      ..write(obj.status)
+      ..writeByte(8)
+      ..write(obj.cancelToken);
   }
 
   @override

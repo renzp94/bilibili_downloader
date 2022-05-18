@@ -1,7 +1,5 @@
 // hive box
 const downloadBoxName = 'downloads';
-// hive box
-const cancelTokenBoxName = 'cancelTokens';
 // api
 const baseUrl = 'https://api.bilibili.com';
 // video url前缀

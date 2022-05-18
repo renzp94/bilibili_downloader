@@ -60,23 +60,21 @@ class _DownloadManagePageState extends State<DownloadManagePage>
   }
 
   Future<Response<dynamic>> analysisOneVideo(int index) async {
-    Box<CancelToken> cancelTokenDB = Hive.box<CancelToken>(cancelTokenBoxName);
     DownloadVideoInfo videoInfo = _downloadList[index];
     String uri = await getVideoDownloadUri(videoInfo.bvid, videoInfo.cid);
     videoInfo.uri = uri;
-    cancelTokenDB.put(videoInfo.cid, CancelToken());
+    videoInfo.cancelToken = CancelToken();
     return download(index);
   }
 
   Future<Response<dynamic>> download(int index) {
     DownloadVideoInfo videoInfo = _downloadList[index];
     Box<DownloadVideoInfo> db = Hive.box<DownloadVideoInfo>(downloadBoxName);
-    Box<CancelToken> cancelTokenDB = Hive.box<CancelToken>(cancelTokenBoxName);
 
     return downloadVideo(
         uri: videoInfo.uri!,
         filename: videoInfo.title,
-        cancelToken: cancelTokenDB.get(videoInfo.cid),
+        cancelToken: videoInfo.cancelToken,
         onReceiveProgress: (int count, int total) {
           videoInfo.process = count / total;
           if (videoInfo.process == 1) {

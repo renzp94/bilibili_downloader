@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 part 'video.g.dart';
 
@@ -27,6 +28,8 @@ class DownloadVideoInfo {
   @HiveField(7, defaultValue: 'wait')
   // 下载状态，wait：等待下载 downloading：下载中 done：下载完成 error：失败 pause：暂停 cancel：取消
   String? status;
+  @HiveField(8)
+  CancelToken? cancelToken;
 
   DownloadVideoInfo(
       {required this.bvid,
@@ -36,5 +39,6 @@ class DownloadVideoInfo {
       required this.title,
       this.uri,
       this.process,
-      this.status});
+      this.status,
+      this.cancelToken});
 }
