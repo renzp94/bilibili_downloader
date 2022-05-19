@@ -16,7 +16,7 @@ Future<Response<dynamic>> downloadVideo(
       onReceiveProgress: onReceiveProgress,
       cancelToken: cancelToken,
       options: Options(responseType: ResponseType.stream, headers: {
-        'Referer': "https://api.bilibili.com",
+        'Referer': "https://bilibili.com",
         'User-Agent':
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.132 Safari/537.36',
       }));
