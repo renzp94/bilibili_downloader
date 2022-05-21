@@ -1,3 +1,4 @@
+import 'package:bilibili_downloader/pages/about.dart';
 import 'package:flutter/material.dart';
 
 import 'download_manage.dart';
@@ -6,6 +7,7 @@ import 'home.dart';
 enum Pages {
   home,
   downloadManage,
+  about,
 }
 
 class Routes {
@@ -29,4 +31,9 @@ const routes = [
       title: '下载管理',
       page: DownloadManagePage(),
       icon: Icons.download),
+  Routes(
+      key: Pages.about,
+      title: '关于',
+      page: AboutPage(),
+      icon: Icons.help_rounded),
 ];

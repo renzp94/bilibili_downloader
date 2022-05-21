@@ -17,3 +17,19 @@ void warningTips(String message) {
       duration: const Duration(milliseconds: 1500),
       animationDuration: const Duration(milliseconds: 300));
 }
+
+void successTips(String message) {
+  Get.snackbar('', message,
+      titleText: const Text(
+        '成功',
+        style: TextStyle(color: Colors.green, fontWeight: FontWeight.w900),
+      ),
+      icon: const Icon(
+        Icons.check_circle,
+        color: Colors.green,
+      ),
+      snackPosition: SnackPosition.TOP,
+      maxWidth: 300,
+      duration: const Duration(milliseconds: 1500),
+      animationDuration: const Duration(milliseconds: 300));
+}
