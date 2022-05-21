@@ -5,6 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import '../widgets/video_item.dart';
+
 class DownloadManagePage extends StatefulWidget {
   const DownloadManagePage({Key? key}) : super(key: key);
 
@@ -20,7 +22,7 @@ class _DownloadManagePageState extends State<DownloadManagePage>
     super.initState();
     Box<DownloadVideoInfo>? db = Hive.box<DownloadVideoInfo>(downloadBoxName);
     _downloadList = db.values.toList();
-    loopDownload();
+    // loopDownload();
   }
 
   void loopDownload() async {
@@ -132,30 +134,7 @@ class _DownloadManagePageState extends State<DownloadManagePage>
                                   children: [
                                     Padding(
                                       padding: const EdgeInsets.all(12),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: [
-                                          ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              child: Image.network(
-                                                item.pic,
-                                                height: 100,
-                                                width: 140,
-                                                fit: BoxFit.cover,
-                                              )),
-                                          Expanded(
-                                              flex: 1,
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(
-                                                    left: 12),
-                                                child: Text(item.title),
-                                              ))
-                                        ],
-                                      ),
+                                      child: VideoItem(item),
                                     ),
                                     ClipRRect(
                                       borderRadius: const BorderRadius.only(
