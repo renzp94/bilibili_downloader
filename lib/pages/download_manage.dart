@@ -1,6 +1,8 @@
 import 'package:bilibili_downloader/api/video.dart';
 import 'package:bilibili_downloader/constant.dart';
+import 'package:bilibili_downloader/models/settings.dart';
 import 'package:bilibili_downloader/models/video.dart';
+import 'package:bilibili_downloader/utils/tools.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -17,12 +19,21 @@ class DownloadManagePage extends StatefulWidget {
 class _DownloadManagePageState extends State<DownloadManagePage>
     with AutomaticKeepAliveClientMixin {
   List<DownloadVideoInfo> _downloadList = [];
+  late Settings _settings;
+
   @override
   void initState() {
     super.initState();
     Box<DownloadVideoInfo>? db = Hive.box<DownloadVideoInfo>(downloadBoxName);
-    _downloadList = db.values.toList();
-    // loopDownload();
+    setState(() {
+      _downloadList = db.values.toList();
+    });
+    startDownload();
+  }
+
+  void startDownload() async {
+    _settings = await getSettings();
+    loopDownload();
   }
 
   void loopDownload() async {
@@ -43,8 +54,8 @@ class _DownloadManagePageState extends State<DownloadManagePage>
             _downloadList.where((element) => element.status == 'wait').toList();
 
         if (list.isNotEmpty) {
-          int count = list.length > defaultMaxDownloadCount
-              ? defaultMaxDownloadCount
+          int count = list.length > _settings.maxDownloadCount
+              ? _settings.maxDownloadCount
               : list.length;
           List<int> cidList = list.sublist(0, count).map((e) => e.cid).toList();
 
@@ -75,14 +86,13 @@ class _DownloadManagePageState extends State<DownloadManagePage>
 
     return downloadVideo(
         uri: videoInfo.uri!,
-        filename: videoInfo.title,
+        filename: "${_settings.downloadDir}/${videoInfo.title}.flv",
         cancelToken: videoInfo.cancelToken,
         onReceiveProgress: (int count, int total) {
           videoInfo.process = count / total;
           if (videoInfo.process == 1) {
             videoInfo.status = "done";
           }
-          _downloadList[index] = videoInfo;
           db.putAt(index, videoInfo);
           setState(() {
             _downloadList[index] = videoInfo;
@@ -100,63 +110,63 @@ class _DownloadManagePageState extends State<DownloadManagePage>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 24, left: 24, right: 24),
-          child: Text('下载管理'),
-        ),
-        Expanded(
-            child: Padding(
-                padding: const EdgeInsets.only(top: 12, left: 12),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: ListView.builder(
-                          itemBuilder: (BuildContext ctx, int index) {
-                            DownloadVideoInfo item = _downloadList[index];
-                            return Container(
-                                margin: const EdgeInsets.only(
-                                    top: 12, left: 12, bottom: 12, right: 24),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(8),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      blurRadius: 10,
-                                      spreadRadius: 0.1,
-                                      color: Colors.grey.withOpacity(0.2),
-                                    ),
-                                  ],
-                                ),
-                                child: Stack(
-                                  alignment: Alignment.bottomLeft,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(12),
-                                      child: VideoItem(item),
-                                    ),
-                                    ClipRRect(
-                                      borderRadius: const BorderRadius.only(
-                                          bottomLeft: Radius.circular(8),
-                                          bottomRight: Radius.circular(8)),
-                                      child: LinearProgressIndicator(
-                                        color: item.process == 1
-                                            ? Colors.green
-                                            : Colors.blue,
-                                        backgroundColor: Colors.transparent,
-                                        value: item.process,
-                                      ),
-                                    ),
-                                  ],
-                                ));
-                          },
-                          primary: false,
-                          itemCount: _downloadList.length),
+    return Padding(
+        padding: const EdgeInsets.only(top: 12, left: 12),
+        child: _downloadList.isNotEmpty
+            ? ListView.builder(
+                itemBuilder: (BuildContext ctx, int index) {
+                  DownloadVideoInfo item = _downloadList[index];
+                  return Container(
+                      margin: const EdgeInsets.only(
+                          top: 12, left: 12, bottom: 12, right: 24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            blurRadius: 10,
+                            spreadRadius: 0.1,
+                            color: Colors.grey.withOpacity(0.2),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        alignment: Alignment.bottomLeft,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: VideoItem(item),
+                          ),
+                          ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                                bottomLeft: Radius.circular(8),
+                                bottomRight: Radius.circular(8)),
+                            child: LinearProgressIndicator(
+                              color: item.process == 1
+                                  ? Colors.green
+                                  : Colors.blue,
+                              backgroundColor: Colors.transparent,
+                              value: item.process,
+                            ),
+                          ),
+                        ],
+                      ));
+                },
+                primary: false,
+                itemCount: _downloadList.length)
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: const [
+                    Icon(
+                      Icons.cloud_download,
+                      size: 72,
+                      color: Colors.grey,
+                    ),
+                    Text(
+                      '暂无下载任务',
+                      style: TextStyle(color: Colors.grey, fontSize: 18),
                     )
-                  ],
-                )))
-      ],
-    );
+                  ]));
   }
 }

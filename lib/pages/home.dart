@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../api/video.dart';
+import '../models/settings.dart';
 import '../widgets/video_item.dart';
 import 'routes.dart';
 
@@ -23,6 +24,17 @@ class _HomePageState extends State<HomePage>
   String _url = '';
   List<DownloadVideoInfo> _list = [];
   List<dynamic> _checkedList = [];
+  late Settings _settings;
+
+  @override
+  void initState() {
+    super.initState();
+    setSettings();
+  }
+
+  void setSettings() async {
+    _settings = await getSettings();
+  }
 
   void onVideoItemTap(DownloadVideoInfo item) {
     setState(() {
@@ -69,7 +81,8 @@ class _HomePageState extends State<HomePage>
                 cid: data['pages'][i]['cid'],
                 title: "P${i}_${data['pages'][i]['part']}",
                 process: 0,
-                status: i < defaultMaxDownloadCount ? 'downloading' : 'wait'))
+                status:
+                    i < _settings.maxDownloadCount ? 'downloading' : 'wait'))
             .toList();
 
         _checkedList = list.map((i) => data['pages'][i]['cid']).toList();

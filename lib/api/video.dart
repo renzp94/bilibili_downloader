@@ -12,7 +12,7 @@ Future<Response<dynamic>> downloadVideo(
     required String filename,
     CancelToken? cancelToken,
     Function(int, int)? onReceiveProgress}) {
-  return Dio().download(uri, './biliDown/$filename.flv',
+  return Dio().download(uri, filename,
       onReceiveProgress: onReceiveProgress,
       cancelToken: cancelToken,
       options: Options(responseType: ResponseType.stream, headers: {
