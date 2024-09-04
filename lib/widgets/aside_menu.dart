@@ -14,11 +14,11 @@ class AsideMenu extends StatefulWidget {
   final int selectedIndex;
   final Function? onItemTap;
   const AsideMenu({
-    Key? key,
+    super.key,
     required this.data,
     required this.selectedIndex,
     this.onItemTap,
-  }) : super(key: key);
+  });
 
   @override
   State<AsideMenu> createState() => _AsideMenuState();
@@ -37,17 +37,16 @@ class _AsideMenuState extends State<AsideMenu> {
       child: Column(children: [
         Container(
           padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Row(
+          child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
-            children: const [
+            children: [
               Image(
                 image: AssetImage(
-                  'assets/images/favicon.ico',
+                  'assets/images/logo.png',
                 ),
-                color: Colors.blue,
-                height: 32,
-                width: 32,
+                height: 40,
+                width: 40,
               ),
               Padding(
                 padding: EdgeInsets.only(left: 12, top: 8),
@@ -65,7 +64,7 @@ class _AsideMenuState extends State<AsideMenu> {
         ),
         Expanded(
           child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ListView(
                 children: widget.data
                     .asMap()
