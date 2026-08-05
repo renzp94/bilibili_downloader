@@ -2,18 +2,29 @@ import 'package:flutter/material.dart';
 
 class VideoThumbnail extends StatelessWidget {
   final String image;
+  final double height;
+  final double width;
 
-  const VideoThumbnail(this.image, {Key? key}) : super(key: key);
+  const VideoThumbnail(this.image,
+      {super.key, this.height = 56, this.width = 100});
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          image,
-          height: 100,
-          width: 140,
-          fit: BoxFit.cover,
-        ));
+      borderRadius: BorderRadius.circular(6),
+      child: Image.network(
+        image,
+        height: height,
+        width: width,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => Container(
+          height: height,
+          width: width,
+          color: Colors.grey.withValues(alpha: 0.15),
+          child:
+              const Icon(Icons.broken_image, color: Colors.grey, size: 20),
+        ),
+      ),
+    );
   }
 }

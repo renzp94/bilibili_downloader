@@ -3,14 +3,17 @@ import 'package:bilibili_downloader/store/store.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'models/db.dart';
+import 'models/database.dart';
+import 'utils/logger.dart';
 
 class App extends StatelessWidget {
-  const App({Key? key}) : super(key: key);
+  const App({super.key});
 
   static void start() async {
     WidgetsFlutterBinding.ensureInitialized();
-    await DB.init();
+    await Logger().init();
+    Logger().info('应用启动');
+    Get.put(AppDatabase());
     Get.put(Store());
 
     runApp(const App());

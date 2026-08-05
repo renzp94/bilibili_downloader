@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'aside.dart';
 
 class Layout extends StatelessWidget {
-  const Layout({Key? key}) : super(key: key);
+  const Layout({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,8 +20,8 @@ class Layout extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
-            color: Colors.white.withOpacity(0.5),
-            child: Row(children: const [LayoutAside(), LayoutContent()])),
+            color: Colors.white.withValues(alpha: 0.5),
+            child: const Row(children: [LayoutAside(), LayoutContent()])),
       ),
     );
   }
