@@ -16,7 +16,10 @@ class Layout extends StatelessWidget {
           colors: [Color(0xFF0F0F1A), Color(0xFF1A1A2E), Color(0xFF12121F)],
         ),
       ),
-      child: const Row(children: [LayoutAside(), LayoutContent()]),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 24),
+        child: const Row(children: [LayoutAside(), LayoutContent()]),
+      ),
     );
   }
 }
