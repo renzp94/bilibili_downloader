@@ -21,7 +21,8 @@ class VideoItem extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Text(info.title,
-              style: const TextStyle(fontSize: 14),
+              style:
+                  const TextStyle(fontSize: 13, color: Colors.white70),
               maxLines: 2,
               overflow: TextOverflow.ellipsis),
         ),

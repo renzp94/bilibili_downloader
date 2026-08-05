@@ -23,9 +23,14 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
         title: "BiliDown",
-        home: Scaffold(
-          backgroundColor: Colors.grey[100],
-          body: const Layout(),
-        ));
+        theme: ThemeData.dark().copyWith(
+          scaffoldBackgroundColor: const Color(0xFF0F0F1A),
+          dialogBackgroundColor: const Color(0xFF1E1E2E),
+          colorScheme: const ColorScheme.dark(
+            primary: Color(0xFFFB7299),
+            secondary: Color(0xFFFB7299),
+          ),
+        ),
+        home: const Scaffold(body: Layout()));
   }
 }

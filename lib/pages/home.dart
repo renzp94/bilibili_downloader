@@ -27,6 +27,8 @@ class _HomePageState extends State<HomePage>
   final Set<int> _checkedCids = {};
   late Settings _settings;
 
+  static const _accent = Color(0xFFFB7299);
+
   @override
   void initState() {
     super.initState();
@@ -134,7 +136,6 @@ class _HomePageState extends State<HomePage>
         _list.where((e) => _checkedCids.contains(e.cid)).toList();
     final db = Get.find<AppDatabase>();
     final existingCids = (await db.allVideos()).map((e) => e.cid).toSet();
-
     final toAdd =
         selected.where((e) => !existingCids.contains(e.cid)).toList();
     if (toAdd.isNotEmpty) {
@@ -155,46 +156,37 @@ class _HomePageState extends State<HomePage>
   @override
   bool get wantKeepAlive => true;
 
+  Widget _glassCard(
+      {required Widget child,
+      EdgeInsets? padding,
+      BorderRadius? radius}) {
+    return Container(
+      padding: padding ?? const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: radius ?? BorderRadius.circular(10),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
     final hasResult = _list.isNotEmpty;
-
-    return Column(
-      children: [
-        // 头部
-        _buildHeader(),
-        // 搜索栏
-        Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-          child: _buildSearchBar(),
-        ),
-        // 内容区
-        Expanded(
-            child: hasResult ? _buildResult() : _buildEmpty()),
-        // 底部下载栏
-        if (hasResult && _checkedCids.isNotEmpty)
-          _buildBottomBar(),
-      ],
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.only(top: 32, bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Image.asset('assets/images/logo.png',
-              height: 32, width: 32),
-          const SizedBox(width: 8),
-          Text('BiliDown',
-              style: TextStyle(
-                fontFamily: 'PressStart2P',
-                fontSize: 16,
-                color: Colors.black.withValues(alpha: 0.8),
-              )),
+          _buildSearchBar(),
+          const SizedBox(height: 20),
+          Expanded(
+              child: hasResult ? _buildResult() : _buildEmpty()),
+          if (hasResult && _checkedCids.isNotEmpty)
+            _buildBottomBar(),
         ],
       ),
     );
@@ -207,40 +199,55 @@ class _HomePageState extends State<HomePage>
           child: TextField(
             controller: _urlController,
             onSubmitted: (_) => _onSearch(),
+            style: const TextStyle(
+                color: Colors.white, fontSize: 14),
+            cursorColor: _accent,
             decoration: InputDecoration(
-              prefixIcon:
-                  const Icon(Icons.link, size: 20),
+              prefixIcon: const Icon(Icons.link,
+                  size: 20, color: Colors.white38),
               hintText: '粘贴B站视频链接...',
+              hintStyle: const TextStyle(
+                  color: Colors.white24, fontSize: 14),
               filled: true,
               fillColor:
-                  Colors.white.withValues(alpha: 0.6),
+                  Colors.white.withValues(alpha: 0.06),
               border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                    color: _accent.withValues(alpha: 0.4)),
               ),
               contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16, vertical: 14),
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        ElevatedButton.icon(
-          onPressed: _searching ? null : _onSearch,
-          icon: _searching
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2))
-              : const Icon(Icons.search, size: 20),
-          label: const Text('搜索'),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 24, vertical: 14),
-            shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(12)),
+        const SizedBox(width: 10),
+        SizedBox(
+          height: 52,
+          child: ElevatedButton.icon(
+            onPressed: _searching ? null : _onSearch,
+            icon: _searching
+                ? const SizedBox(
+                    width: 16, height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white))
+                : const Icon(Icons.search, size: 20),
+            label: const Text('搜索'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _accent,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor:
+                  _accent.withValues(alpha: 0.3),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 28, vertical: 14),
+            ),
           ),
         ),
       ],
@@ -249,132 +256,109 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildEmpty() {
     if (_history.isEmpty) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.video_library_outlined,
-              size: 80,
-              color: Colors.grey.withValues(alpha: 0.4)),
-          const SizedBox(height: 16),
-          Text('粘贴B站视频链接开始下载',
-              style: TextStyle(
-                  fontSize: 16,
-                  color:
-                      Colors.grey.withValues(alpha: 0.6))),
-          const SizedBox(height: 4),
-          Text('支持单个视频或多P视频',
-              style: TextStyle(
-                  fontSize: 13,
-                  color:
-                      Colors.grey.withValues(alpha: 0.4))),
-        ],
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.video_library_outlined,
+                size: 64, color: Colors.white12),
+            const SizedBox(height: 16),
+            const Text('粘贴B站视频链接开始下载',
+                style: TextStyle(
+                    fontSize: 15, color: Colors.white38)),
+            const SizedBox(height: 6),
+            const Text('支持单个视频或多P视频',
+                style: TextStyle(
+                    fontSize: 13, color: Colors.white24)),
+          ],
+        ),
       );
     }
-    return Padding(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 48),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(
-                left: 4, bottom: 8),
-            child: Row(
-              children: [
-                Icon(Icons.history,
-                    size: 16,
-                    color: Colors.black45),
-                const SizedBox(width: 6),
-                Text('搜索历史',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: [
+              const Icon(Icons.history, size: 15,
+                  color: Colors.white38),
+              const SizedBox(width: 8),
+              const Text('搜索历史',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white38,
+                      fontWeight: FontWeight.w500)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () async {
+                  await Get.find<AppDatabase>()
+                      .clearHistory();
+                  if (mounted)
+                    setState(() => _history = []);
+                },
+                child: const Text('清空',
                     style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.black45,
-                        fontWeight: FontWeight.w500)),
-                const Spacer(),
-                InkWell(
-                  onTap: () async {
-                    await Get.find<AppDatabase>()
-                        .clearHistory();
-                    if (mounted)
-                      setState(() => _history = []);
-                  },
-                  child: Text('清空',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.black38)),
-                ),
-              ],
-            ),
+                        fontSize: 12,
+                        color: Colors.white24)),
+              ),
+            ],
           ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _history.length,
-              itemBuilder: (_, i) =>
-                  _buildHistoryItem(_history[i]),
-            ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _history.length,
+            itemBuilder: (_, i) =>
+                _buildHistoryItem(_history[i]),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildHistoryItem(SearchHistory h) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: InkWell(
+      child: GestureDetector(
         onTap: () => _searchFromHistory(h),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
+        child: _glassCard(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(8),
-          ),
           child: Row(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(6),
                 child: Image.network(h.pic,
-                    height: 40,
-                    width: 72,
+                    height: 40, width: 72,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
-                        Container(
-                            height: 40,
-                            width: 72,
-                            color: Colors.grey
-                                .withValues(alpha: 0.15),
-                            child: const Icon(
-                                Icons.broken_image,
-                                size: 14,
-                                color:
-                                    Colors.grey))),
+                    errorBuilder: (_, _, _) => Container(
+                        height: 40, width: 72,
+                        color: Colors.white
+                            .withValues(alpha: 0.04),
+                        child: const Icon(
+                            Icons.broken_image,
+                            size: 14,
+                            color: Colors.white24))),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(h.title,
-                        maxLines: 1,
-                        overflow:
-                            TextOverflow.ellipsis,
+                    Text(h.title, maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            fontSize: 13)),
-                    const SizedBox(height: 2),
-                    Text(h.url,
-                        maxLines: 1,
-                        overflow:
-                            TextOverflow.ellipsis,
-                        style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.white70)),
+                    const SizedBox(height: 3),
+                    Text(h.url, maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
                             fontSize: 11,
-                            color:
-                                Colors.black38)),
+                            color: Colors.white24)),
                   ],
                 ),
               ),
-              InkWell(
+              GestureDetector(
                 onTap: () async {
                   await Get.find<AppDatabase>()
                       .deleteHistory(h.id);
@@ -382,9 +366,8 @@ class _HomePageState extends State<HomePage>
                 },
                 child: const Padding(
                   padding: EdgeInsets.all(4),
-                  child: Icon(Icons.close,
-                      size: 14,
-                      color: Colors.black26),
+                  child: Icon(Icons.close, size: 14,
+                      color: Colors.white24),
                 ),
               ),
             ],
@@ -395,45 +378,36 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildResult() {
-    return Padding(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildResultHeader(),
-          const SizedBox(height: 12),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _list.length,
-              itemBuilder: (_, i) =>
-                  _buildListItem(_list[i]),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildResultHeader(),
+        const SizedBox(height: 10),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _list.length,
+            itemBuilder: (_, i) =>
+                _buildListItem(_list[i]),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildResultHeader() {
-    return Container(
+    return _glassCard(
       padding: const EdgeInsets.symmetric(
-          horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(8),
-      ),
+          horizontal: 14, vertical: 10),
       child: Row(
         children: [
           if (_videoPic != null) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: Image.network(_videoPic!,
-                  height: 36,
-                  width: 64,
+                  height: 40, width: 70,
                   fit: BoxFit.cover),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
           ],
           Expanded(
             child: Text(_videoTitle ?? '',
@@ -441,7 +415,8 @@ class _HomePageState extends State<HomePage>
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 14)),
+                    fontSize: 14,
+                    color: Colors.white)),
           ),
           const SizedBox(width: 8),
           _textButton(
@@ -450,13 +425,10 @@ class _HomePageState extends State<HomePage>
                 : '全选',
             _toggleAll,
           ),
-          const SizedBox(width: 8),
-          Text(
-              '${_checkedCids.length}/${_list.length}',
-              style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.black
-                      .withValues(alpha: 0.5))),
+          const SizedBox(width: 10),
+          Text('${_checkedCids.length}/${_list.length}',
+              style: const TextStyle(
+                  fontSize: 12, color: Colors.white38)),
         ],
       ),
     );
@@ -466,62 +438,59 @@ class _HomePageState extends State<HomePage>
     final checked = _checkedCids.contains(item.cid);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
+      child: GestureDetector(
         onTap: () => _toggleItem(item),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
+        child: _glassCard(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: checked
-                ? Colors.blue.withValues(alpha: 0.08)
-                : Colors.white.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(8),
-            border: checked
-                ? Border.all(
-                    color: Colors.blue
-                        .withValues(alpha: 0.3))
-                : null,
-          ),
-          child: Row(
-            children: [
-              Checkbox(
-                value: checked,
-                onChanged: (_) =>
-                    _toggleItem(item),
-                visualDensity:
-                    VisualDensity.compact,
-              ),
-              const SizedBox(width: 4),
-              ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(6),
-                child: Image.network(
-                  item.pic,
-                  height: 54,
-                  width: 96,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) =>
-                      Container(
-                    height: 54,
-                    width: 96,
-                    color: Colors.grey
-                        .withValues(alpha: 0.2),
-                    child: const Icon(
-                        Icons.broken_image,
-                        color: Colors.grey),
-                  ),
+          radius: BorderRadius.circular(10),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: checked
+                  ? _accent.withValues(alpha: 0.08)
+                  : Colors.transparent,
+              border: checked
+                  ? Border.all(
+                      color: _accent.withValues(alpha: 0.2))
+                  : null,
+            ),
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: checked,
+                  activeColor: _accent,
+                  checkColor: Colors.white,
+                  side: BorderSide(
+                      color: checked
+                          ? _accent
+                          : Colors.white24),
+                  onChanged: (_) => _toggleItem(item),
+                  visualDensity: VisualDensity.compact,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(item.title,
-                    style: const TextStyle(
-                        fontSize: 14),
-                    maxLines: 2,
-                    overflow:
-                        TextOverflow.ellipsis),
-              ),
-            ],
+                const SizedBox(width: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.network(item.pic,
+                      height: 54, width: 96,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                          height: 54, width: 96,
+                          color: Colors.white.withValues(alpha: 0.04),
+                          child: const Icon(Icons.broken_image,
+                              color: Colors.white24))),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(item.title,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white70),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -529,50 +498,39 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildBottomBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 32, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.8),
-        border: Border(
-            top: BorderSide(
-                color: Colors.black
-                    .withValues(alpha: 0.06))),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ElevatedButton.icon(
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Center(
+        child: SizedBox(
+          height: 48,
+          child: ElevatedButton.icon(
             onPressed: _onDownload,
-            icon: const Icon(Icons.download,
-                size: 20),
+            icon: const Icon(Icons.download, size: 20),
             label: Text(
                 '下载选中 (${_checkedCids.length}个)'),
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 32, vertical: 14),
+              backgroundColor: _accent,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 32, vertical: 12),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _textButton(
-      String text, VoidCallback onTap) {
-    return InkWell(
+  Widget _textButton(String text, VoidCallback onTap) {
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
       child: Padding(
         padding: const EdgeInsets.symmetric(
             horizontal: 4, vertical: 2),
         child: Text(text,
             style: const TextStyle(
-                fontSize: 13,
-                color: Colors.blue)),
+                fontSize: 12, color: _accent)),
       ),
     );
   }

@@ -20,9 +20,9 @@ class VideoThumbnail extends StatelessWidget {
         errorBuilder: (_, _, _) => Container(
           height: height,
           width: width,
-          color: Colors.grey.withValues(alpha: 0.15),
-          child:
-              const Icon(Icons.broken_image, color: Colors.grey, size: 20),
+          color: Colors.white.withValues(alpha: 0.04),
+          child: const Icon(Icons.broken_image,
+              color: Colors.white24, size: 20),
         ),
       ),
     );

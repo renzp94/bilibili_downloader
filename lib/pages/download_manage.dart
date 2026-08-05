@@ -30,6 +30,8 @@ class _DownloadManagePageState
   late Settings _settings;
   late AppDatabase _db;
 
+  static const _accent = Color(0xFFFB7299);
+
   @override
   void initState() {
     super.initState();
@@ -61,7 +63,6 @@ class _DownloadManagePageState
       await _reloadAndCheckWait();
       return;
     }
-
     _activeIds.addAll(items.map((e) => e.id));
     await Future.wait(items.map(_downloadOne));
     _activeIds.removeAll(items.map((e) => e.id));
@@ -72,10 +73,8 @@ class _DownloadManagePageState
     final videos = await _db.allVideos();
     if (!mounted) return;
     setState(() => _downloadList = videos);
-
-    final waitItems = videos
-        .where((e) => e.status == 'wait')
-        .toList();
+    final waitItems =
+        videos.where((e) => e.status == 'wait').toList();
     if (waitItems.isNotEmpty)
       await _enqueueDownloads(waitItems);
     if (!mounted) return;
@@ -92,13 +91,10 @@ class _DownloadManagePageState
       _db.cancelTokens[video.id] = cancelToken;
       final outputPath =
           '${_settings.downloadDir}/${video.title}.flv';
-
-      final segments =
-          await _fetchSegmentsWithRetry(
-              video.bvid, video.cid);
+      final segments = await _fetchSegmentsWithRetry(
+          video.bvid, video.cid);
       if (segments.isEmpty)
         throw Exception('无可用下载链接');
-
       if (segments.length == 1) {
         await _downloadSingleSegment(
             segments.first, outputPath,
@@ -108,7 +104,6 @@ class _DownloadManagePageState
             segments, outputPath,
             cancelToken, video);
       }
-
       Logger().info('下载完成: ${video.title}');
       _onProgress(video, 1.0);
     } on DioException catch (e) {
@@ -116,8 +111,8 @@ class _DownloadManagePageState
         await _db.updateVideoProgress(
             video.id, video.progress, 'pause');
       } else {
-        Logger()
-            .error('下载失败: ${video.title} - ${e.message}');
+        Logger().error(
+            '下载失败: ${video.title} - ${e.message}');
         await _saveError(video.id, video.progress,
             e.message ?? '网络错误');
       }
@@ -179,13 +174,11 @@ class _DownloadManagePageState
     final workDir = Directory(segDir);
     if (!workDir.existsSync())
       workDir.createSync(recursive: true);
-
     var downloadedSize = 0;
     for (var i = 0; i < segments.length; i++) {
       final segFile =
           File('${workDir.path}/seg_$i');
       final expectedSize = segments[i].size;
-
       if (!segFile.existsSync() ||
           segFile.lengthSync() != expectedSize) {
         final freshSegs =
@@ -206,7 +199,6 @@ class _DownloadManagePageState
       _onProgress(
           video, downloadedSize / totalSize);
     }
-
     final sink = File(outputPath).openWrite();
     for (var i = 0; i < segments.length; i++) {
       sink.add(await File(
@@ -367,23 +359,33 @@ class _DownloadManagePageState
           return StatefulBuilder(
               builder: (ctx, setDialogState) {
             return AlertDialog(
+              backgroundColor:
+                  const Color(0xFF1E1E2E),
               title: Text(isSingle
-                  ? '删除任务'
-                  : '清空全部'),
+                      ? '删除任务'
+                      : '清空全部',
+                  style: const TextStyle(
+                      color: Colors.white)),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment:
                     CrossAxisAlignment.start,
                 children: [
-                  Text(isSingle
-                      ? '确定要删除「$title」吗？'
-                      : '确定要清空全部下载任务吗？'),
+                  Text(
+                      isSingle
+                          ? '确定要删除「$title」吗？'
+                          : '确定要清空全部下载任务吗？',
+                      style: const TextStyle(
+                          color: Colors.white70)),
                   if (showDeleteFile) ...[
                     const SizedBox(height: 12),
                     CheckboxListTile(
                       value: deleteFile,
+                      activeColor: _accent,
                       title: const Text(
-                          '同时删除已下载的文件'),
+                          '同时删除已下载的文件',
+                          style: TextStyle(
+                              color: Colors.white70)),
                       controlAffinity:
                           ListTileControlAffinity
                               .leading,
@@ -402,14 +404,15 @@ class _DownloadManagePageState
                 TextButton(
                     onPressed: () =>
                         Navigator.pop(ctx),
-                    child:
-                        const Text('取消')),
+                    child: const Text('取消',
+                        style: TextStyle(
+                            color: Colors.white38))),
                 TextButton(
                   onPressed: () => Navigator.pop(
                       ctx, deleteFile),
                   child: const Text('删除',
                       style: TextStyle(
-                          color: Colors.red)),
+                          color: _accent)),
                 ),
               ],
             );
@@ -464,15 +467,31 @@ class _DownloadManagePageState
     setState(() => _downloadList.clear());
   }
 
-  // ── UI ──
+  // ═══ UI ═══
 
   static const _statusMap = {
-    'wait': ('排队中', Colors.grey),
-    'downloading': ('下载中', Colors.blue),
-    'pause': ('已暂停', Colors.orange),
-    'done': ('已完成', Colors.green),
-    'error': ('失败', Colors.red),
+    'wait': ('排队中', Colors.white30),
+    'downloading': ('下载中', Color(0xFF64B5F6)),
+    'pause': ('已暂停', Colors.orangeAccent),
+    'done': ('已完成', Color(0xFF81C784)),
+    'error': ('失败', Color(0xFFE57373)),
   };
+
+  Widget _glassCard(
+      {required Widget child,
+      EdgeInsets? padding,
+      BorderRadius? radius}) {
+    return Container(
+      padding: padding ?? const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: radius ?? BorderRadius.circular(10),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: child,
+    );
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -500,68 +519,75 @@ class _DownloadManagePageState
 
     if (_downloadList.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(28),
         child: _buildEmpty(),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(28),
       child: DefaultTabController(
         length: 4,
         child: Column(
           children: [
             _buildStats(activeCount, pauseCount,
                 doneCount, failCount),
-            const SizedBox(height: 8),
-            TabBar(
-            isScrollable: false,
-            labelStyle: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500),
-            unselectedLabelStyle:
-                const TextStyle(fontSize: 13),
-            indicatorSize:
-                TabBarIndicatorSize.label,
-            tabs: [
-              Tab(
-                  text:
-                      '全部 (${_downloadList.length})'),
-              Tab(
-                  text:
-                      '下载中 ($downloadingCount)'),
-              Tab(
-                  text:
-                      '下载完成 ($doneCount)'),
-              Tab(
-                  text: '下载失败 ($failCount)'),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                _buildList(_downloadList),
-                _buildList(_downloadList
-                    .where((e) =>
-                        e.status ==
-                            'downloading' ||
-                        e.status == 'wait' ||
-                        e.status == 'pause')
-                    .toList()),
-                _buildList(_downloadList
-                    .where((e) =>
-                        e.status == 'done')
-                    .toList()),
-                _buildList(_downloadList
-                    .where((e) =>
-                        e.status == 'error')
-                    .toList()),
-              ],
+            const SizedBox(height: 12),
+            _glassCard(
+              padding: EdgeInsets.zero,
+              child: TabBar(
+                isScrollable: false,
+                indicatorColor: _accent,
+                labelColor: _accent,
+                unselectedLabelColor: Colors.white38,
+                labelStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500),
+                unselectedLabelStyle:
+                    const TextStyle(fontSize: 13),
+                indicatorSize:
+                    TabBarIndicatorSize.label,
+                tabs: [
+                  Tab(
+                      text:
+                          '全部 (${_downloadList.length})'),
+                  Tab(
+                      text:
+                          '下载中 ($downloadingCount)'),
+                  Tab(
+                      text:
+                          '下载完成 ($doneCount)'),
+                  Tab(
+                      text: '下载失败 ($failCount)'),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildList(_downloadList),
+                  _buildList(_downloadList
+                      .where((e) =>
+                          e.status ==
+                              'downloading' ||
+                          e.status == 'wait' ||
+                          e.status == 'pause')
+                      .toList()),
+                  _buildList(_downloadList
+                      .where((e) =>
+                          e.status == 'done')
+                      .toList()),
+                  _buildList(_downloadList
+                      .where((e) =>
+                          e.status == 'error')
+                      .toList()),
+                ],
+              ),
+            ),
+          ],
         ),
+      ),
     );
   }
 
@@ -571,22 +597,18 @@ class _DownloadManagePageState
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.inbox_outlined,
-              size: 64,
-              color: Colors.grey
-                  .withValues(alpha: 0.3)),
-          const SizedBox(height: 12),
-          Text('暂无下载任务',
+              size: 64, color: Colors.white12),
+          const SizedBox(height: 14),
+          const Text('暂无下载任务',
               style: TextStyle(
-                  color: Colors.grey
-                      .withValues(alpha: 0.5),
-                  fontSize: 16)),
-          const SizedBox(height: 4),
-          Text(
+                  fontSize: 15,
+                  color: Colors.white38)),
+          const SizedBox(height: 6),
+          const Text(
               '在首页搜索视频后点击下载即可添加',
               style: TextStyle(
-                  color: Colors.grey
-                      .withValues(alpha: 0.3),
-                  fontSize: 13)),
+                  fontSize: 13,
+                  color: Colors.white24)),
         ],
       ),
     );
@@ -594,30 +616,23 @@ class _DownloadManagePageState
 
   Widget _buildStats(int active, int pause,
       int done, int fail) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white
-            .withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return _glassCard(
       child: Row(
         children: [
-          _statChip(
-              '进行中', active, Colors.blue),
+          _statChip('进行中', active,
+              const Color(0xFF64B5F6)),
           if (pause > 0) ...[
-            const SizedBox(width: 12),
-            _statChip(
-                '已暂停', pause, Colors.orange),
+            const SizedBox(width: 14),
+            _statChip('已暂停', pause,
+                Colors.orangeAccent),
           ],
-          const SizedBox(width: 12),
-          _statChip(
-              '已完成', done, Colors.green),
+          const SizedBox(width: 14),
+          _statChip('已完成', done,
+              const Color(0xFF81C784)),
           if (fail > 0) ...[
-            const SizedBox(width: 12),
-            _statChip(
-                '失败', fail, Colors.red),
+            const SizedBox(width: 14),
+            _statChip('失败', fail,
+                const Color(0xFFE57373)),
           ],
           const Spacer(),
           if (active > 0) ...[
@@ -636,10 +651,11 @@ class _DownloadManagePageState
           TextButton.icon(
             onPressed: () => _clearAll(),
             icon: const Icon(Icons.delete_sweep,
-                size: 16),
+                size: 16, color: Colors.white38),
             label: const Text('清空全部',
-                style:
-                    TextStyle(fontSize: 13)),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white38)),
           ),
         ],
       ),
@@ -652,19 +668,18 @@ class _DownloadManagePageState
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-            width: 8,
-            height: 8,
+            width: 7, height: 7,
             decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle)),
         const SizedBox(width: 6),
         Text('$label ',
             style: const TextStyle(
-                fontSize: 13,
-                color: Colors.black54)),
+                fontSize: 12,
+                color: Colors.white38)),
         Text('$count',
             style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: color)),
       ],
@@ -677,7 +692,7 @@ class _DownloadManagePageState
       return const Center(
         child: Text('暂无数据',
             style: TextStyle(
-                color: Colors.black38)),
+                color: Colors.white24)),
       );
     }
     return ListView.builder(
@@ -695,17 +710,17 @@ class _DownloadManagePageState
     final showProgress =
         item.status == 'downloading' ||
             item.status == 'pause';
-    final progressColor =
-        item.status == 'pause'
-            ? Colors.orange
-            : Colors.blue;
 
     return Container(
       margin:
           const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius:
             BorderRadius.circular(10),
+        border: Border.all(
+            color: Colors.white
+                .withValues(alpha: 0.06)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -721,19 +736,12 @@ class _DownloadManagePageState
                           ? item.progress
                           : 0,
                   child: Container(
-                      color: progressColor
+                      color: _accent
                           .withValues(
-                              alpha:
-                                  0.12)),
+                              alpha: 0.1)),
                 ),
               ),
             ),
-          Positioned.fill(
-            child: Container(
-                color: Colors.white
-                    .withValues(
-                        alpha: 0.35)),
-          ),
           Padding(
             padding:
                 const EdgeInsets.all(12),
@@ -755,7 +763,8 @@ class _DownloadManagePageState
                             .ellipsis,
                         style: TextStyle(
                             fontSize: 11,
-                            color: Colors.red
+                            color: Colors
+                                .redAccent
                                 .withValues(
                                     alpha:
                                         0.7))),
@@ -787,10 +796,10 @@ class _DownloadManagePageState
                               width: 8),
                           Text(
                               '${(item.progress * 100).toStringAsFixed(0)}%',
-                              style: TextStyle(
+                              style: const TextStyle(
                                   fontSize: 12,
-                                  color: Colors
-                                      .black45)),
+                                  color:
+                                      Colors.white30)),
                         ],
                       ],
                     ),
@@ -833,7 +842,7 @@ class _DownloadManagePageState
       case 'done':
         actions.add(const Icon(
             Icons.check_circle,
-            color: Colors.green,
+            color: Color(0xFF81C784),
             size: 18));
         actions.add(_iconBtn(
             Icons.folder_open, '打开目录',
@@ -857,22 +866,18 @@ class _DownloadManagePageState
 
   Widget _iconBtn(IconData icon,
       String tooltip, VoidCallback onTap) {
-    return Padding(
-      padding:
-          const EdgeInsets.only(left: 4),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius:
-            BorderRadius.circular(4),
-        child: Padding(
-          padding:
-              const EdgeInsets.all(4),
-          child: Tooltip(
-              message: tooltip,
-              child: Icon(icon,
-                  size: 18,
-                  color: Colors.black54)),
-        ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius:
+          BorderRadius.circular(4),
+      child: Padding(
+        padding:
+            const EdgeInsets.all(4),
+        child: Tooltip(
+            message: tooltip,
+            child: Icon(icon,
+                size: 18,
+                color: Colors.white38)),
       ),
     );
   }
@@ -890,8 +895,7 @@ class _DownloadManagePageState
             message: tooltip,
             child: Icon(icon,
                 size: 16,
-                color:
-                    Colors.black54)),
+                color: Colors.white38)),
       ),
     );
   }
