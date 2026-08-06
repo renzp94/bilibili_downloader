@@ -30,7 +30,7 @@ class _DownloadManagePageState
   late Settings _settings;
   late AppDatabase _db;
 
-  static const _accent = Color(0xFFFB7299);
+  static const _accent = Color(0xFF0275EE);
 
   @override
   void initState() {
@@ -489,7 +489,12 @@ class _DownloadManagePageState
         border:
             Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
-      child: child,
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius ?? BorderRadius.circular(10),
+        child: child,
+      ),
     );
   }
 

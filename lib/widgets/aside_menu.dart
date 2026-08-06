@@ -18,7 +18,7 @@ class AsideMenu extends StatelessWidget {
     this.onItemTap,
   });
 
-  static const _accent = Color(0xFFFB7299);
+  static const _accent = Color(0xFF0275EE);
 
   @override
   Widget build(BuildContext context) {
@@ -28,25 +28,24 @@ class AsideMenu extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.06),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(20, 28, 20, 20),
             child: Row(
               children: [
-                Icon(Icons.movie_creation_outlined,
-                    size: 28, color: _accent),
+                Image.asset('assets/images/logo.png', height: 28, width: 28),
                 SizedBox(width: 12),
-                Text('BiliDown',
-                    style: TextStyle(
-                      fontFamily: 'PressStart2P',
-                      fontSize: 14,
-                      color: _accent,
-                    )),
+                Text(
+                  'BiliDown',
+                  style: TextStyle(
+                    fontFamily: 'PressStart2P',
+                    fontSize: 14,
+                    color: _accent,
+                  ),
+                ),
               ],
             ),
           ),
@@ -64,12 +63,15 @@ class AsideMenu extends StatelessWidget {
                           padding: EdgeInsets.fromLTRB(12, 20, 0, 8),
                           child: Align(
                             alignment: Alignment.centerLeft,
-                            child: Text('通用',
-                                style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.white38,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.8)),
+                            child: Text(
+                              '通用',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white38,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
                           ),
                         ),
                       GestureDetector(
@@ -78,7 +80,9 @@ class AsideMenu extends StatelessWidget {
                           duration: const Duration(milliseconds: 180),
                           margin: const EdgeInsets.only(bottom: 2),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 9),
+                            horizontal: 12,
+                            vertical: 9,
+                          ),
                           decoration: BoxDecoration(
                             color: active
                                 ? _accent.withValues(alpha: 0.15)
@@ -87,22 +91,22 @@ class AsideMenu extends StatelessWidget {
                           ),
                           child: Row(
                             children: [
-                              Icon(data[i].icon,
-                                  size: 18,
-                                  color: active
-                                      ? _accent
-                                      : Colors.white54),
+                              Icon(
+                                data[i].icon,
+                                size: 18,
+                                color: active ? _accent : Colors.white54,
+                              ),
                               const SizedBox(width: 12),
-                              Text(data[i].title,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: active
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
-                                    color: active
-                                        ? _accent
-                                        : Colors.white70,
-                                  )),
+                              Text(
+                                data[i].title,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: active
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  color: active ? _accent : Colors.white70,
+                                ),
+                              ),
                             ],
                           ),
                         ),

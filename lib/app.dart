@@ -25,10 +25,14 @@ class App extends StatelessWidget {
         title: "BiliDown",
         theme: ThemeData.dark().copyWith(
           scaffoldBackgroundColor: const Color(0xFF0F0F1A),
-          dialogBackgroundColor: const Color(0xFF1E1E2E),
+          dialogTheme: const DialogThemeData(
+            backgroundColor: Color(0xFF1E1E2E),
+          ),
+          splashColor: Colors.white.withValues(alpha: 0.06),
+          highlightColor: Colors.white.withValues(alpha: 0.03),
           colorScheme: const ColorScheme.dark(
-            primary: Color(0xFFFB7299),
-            secondary: Color(0xFFFB7299),
+            primary: Color(0xFF0275EE),
+            secondary: Color(0xFF0275EE),
           ),
         ),
         home: const Scaffold(body: Layout()));

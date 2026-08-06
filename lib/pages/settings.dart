@@ -19,9 +19,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   Settings? _settings;
   bool _saving = false;
-  static const _taskCountList = [1, 3, 5, 10];
-  static const _splitCountList = [1, 2, 4, 8];
-  static const _accent = Color(0xFFFB7299);
+  static const _accent = Color(0xFF0275EE);
 
   @override
   void initState() {
@@ -86,7 +84,12 @@ class _SettingsPageState extends State<SettingsPage> {
         border:
             Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
-      child: child,
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius ?? BorderRadius.circular(10),
+        child: child,
+      ),
     );
   }
 
@@ -104,12 +107,11 @@ class _SettingsPageState extends State<SettingsPage> {
           _sectionTitle('下载设置'),
           const SizedBox(height: 8),
           _buildDirSetting(),
-          _buildRadioGroup(
-              '下载任务数', _taskCountList, _settings!.maxDownloadCount,
-              (v) =>
-                  setState(() => _settings = _copy(maxDownloadCount: v))),
-          _buildRadioGroup(
-              '分片数', _splitCountList, _settings!.splitCount,
+          _buildInputField(
+              '下载任务数', _settings!.maxDownloadCount,
+              (v) => setState(() => _settings = _copy(maxDownloadCount: v))),
+          _buildInputField(
+              '分片数', _settings!.splitCount,
               (v) => setState(() => _settings = _copy(splitCount: v))),
           _buildQualityRadio(),
           const SizedBox(height: 24),
@@ -117,17 +119,17 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 8),
           _glassCard(
             child: ListTile(
-              leading: const Icon(Icons.article_outlined,
-                  size: 18, color: Colors.white54),
-              title: const Text('查看日志',
-                  style: TextStyle(
-                      fontSize: 13, color: Colors.white70)),
-              trailing: const Icon(Icons.chevron_right,
-                  size: 16, color: Colors.white24),
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              onTap: _openLogDir,
-            ),
+                leading: const Icon(Icons.article_outlined,
+                    size: 18, color: Colors.white54),
+                title: const Text('查看日志',
+                    style: TextStyle(
+                        fontSize: 13, color: Colors.white70)),
+                trailing: const Icon(Icons.chevron_right,
+                    size: 16, color: Colors.white24),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                onTap: _openLogDir,
+              ),
           ),
           const SizedBox(height: 24),
           Center(
@@ -222,44 +224,64 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildRadioGroup(String label, List<int> options,
-      int current, ValueChanged<int> onChanged) {
+  Widget _buildInputField(
+      String label, int current, ValueChanged<int> onChanged) {
+    final controller = TextEditingController(text: '$current');
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: _glassCard(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(
+            horizontal: 12, vertical: 8),
+        child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(
-                  left: 12, top: 4),
-              child: Text(label,
-                  style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.white70)),
-            ),
-            Row(
-              children: options
-                  .map((v) => Expanded(
-                        child: RadioListTile(
-                          title: Text('$v',
-                              style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.white70)),
-                          value: v, dense: true,
-                          activeColor: _accent,
-                          contentPadding: EdgeInsets.zero,
-                          selected: current == v,
-                          groupValue: current,
-                          visualDensity:
-                              VisualDensity.compact,
-                          onChanged: (int? value) {
-                            if (value != null) onChanged(value);
-                          },
-                        ),
-                      ))
-                  .toList(),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 13, color: Colors.white70)),
+            const Spacer(),
+            SizedBox(
+              width: 64,
+              child: TextField(
+                controller: controller,
+                textAlign: TextAlign.center,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 13),
+                cursorColor: _accent,
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 6),
+                  filled: true,
+                  fillColor: Colors.white
+                      .withValues(alpha: 0.06),
+                  border: OutlineInputBorder(
+                    borderRadius:
+                        BorderRadius.circular(6),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius:
+                        BorderRadius.circular(6),
+                    borderSide: BorderSide(
+                        color: _accent
+                            .withValues(alpha: 0.3)),
+                  ),
+                ),
+                onEditingComplete: () {
+                  final n = int.tryParse(controller.text) ?? current;
+                  final v = n.clamp(1, 10);
+                  if (v != current) onChanged(v);
+                  controller.text = '$v';
+                  FocusScope.of(context).unfocus();
+                },
+                onTapOutside: (_) {
+                  final n = int.tryParse(controller.text) ?? current;
+                  final v = n.clamp(1, 10);
+                  if (v != current) onChanged(v);
+                  controller.text = '$v';
+                  FocusScope.of(context).unfocus();
+                },
+              ),
             ),
           ],
         ),

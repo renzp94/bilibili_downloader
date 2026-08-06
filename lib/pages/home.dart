@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage>
   final Set<int> _checkedCids = {};
   late Settings _settings;
 
-  static const _accent = Color(0xFFFB7299);
+  static const _accent = Color(0xFF0275EE);
 
   @override
   void initState() {
@@ -168,7 +168,12 @@ class _HomePageState extends State<HomePage>
         border:
             Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
-      child: child,
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius ?? BorderRadius.circular(10),
+        child: child,
+      ),
     );
   }
 
@@ -381,6 +386,28 @@ class _HomePageState extends State<HomePage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        GestureDetector(
+          onTap: () => setState(() {
+            _list.clear();
+            _videoTitle = null;
+            _videoPic = null;
+            _checkedCids.clear();
+          }),
+          child: const Padding(
+            padding: EdgeInsets.only(bottom: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.arrow_back_ios,
+                    size: 14, color: Colors.white38),
+                SizedBox(width: 4),
+                Text('返回',
+                    style: TextStyle(
+                        fontSize: 12, color: Colors.white38)),
+              ],
+            ),
+          ),
+        ),
         _buildResultHeader(),
         const SizedBox(height: 10),
         Expanded(
