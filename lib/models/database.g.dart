@@ -68,6 +68,17 @@ class $DownloadVideosTable extends DownloadVideos
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _videoTitleMeta = const VerificationMeta(
+    'videoTitle',
+  );
+  @override
+  late final GeneratedColumn<String> videoTitle = GeneratedColumn<String>(
+    'video_title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _uriMeta = const VerificationMeta('uri');
   @override
   late final GeneratedColumn<String> uri = GeneratedColumn<String>(
@@ -120,6 +131,7 @@ class $DownloadVideosTable extends DownloadVideos
     pic,
     cid,
     title,
+    videoTitle,
     uri,
     progress,
     status,
@@ -180,6 +192,14 @@ class $DownloadVideosTable extends DownloadVideos
     } else if (isInserting) {
       context.missing(_titleMeta);
     }
+    if (data.containsKey('video_title')) {
+      context.handle(
+        _videoTitleMeta,
+        videoTitle.isAcceptableOrUnknown(data['video_title']!, _videoTitleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_videoTitleMeta);
+    }
     if (data.containsKey('uri')) {
       context.handle(
         _uriMeta,
@@ -237,6 +257,10 @@ class $DownloadVideosTable extends DownloadVideos
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      videoTitle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_title'],
+      )!,
       uri: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}uri'],
@@ -270,6 +294,7 @@ class DownloadVideoInfo extends DataClass
   final String pic;
   final int cid;
   final String title;
+  final String videoTitle;
   final String? uri;
   final double progress;
   final String status;
@@ -281,6 +306,7 @@ class DownloadVideoInfo extends DataClass
     required this.pic,
     required this.cid,
     required this.title,
+    required this.videoTitle,
     this.uri,
     required this.progress,
     required this.status,
@@ -295,6 +321,7 @@ class DownloadVideoInfo extends DataClass
     map['pic'] = Variable<String>(pic);
     map['cid'] = Variable<int>(cid);
     map['title'] = Variable<String>(title);
+    map['video_title'] = Variable<String>(videoTitle);
     if (!nullToAbsent || uri != null) {
       map['uri'] = Variable<String>(uri);
     }
@@ -314,6 +341,7 @@ class DownloadVideoInfo extends DataClass
       pic: Value(pic),
       cid: Value(cid),
       title: Value(title),
+      videoTitle: Value(videoTitle),
       uri: uri == null && nullToAbsent ? const Value.absent() : Value(uri),
       progress: Value(progress),
       status: Value(status),
@@ -335,6 +363,7 @@ class DownloadVideoInfo extends DataClass
       pic: serializer.fromJson<String>(json['pic']),
       cid: serializer.fromJson<int>(json['cid']),
       title: serializer.fromJson<String>(json['title']),
+      videoTitle: serializer.fromJson<String>(json['videoTitle']),
       uri: serializer.fromJson<String?>(json['uri']),
       progress: serializer.fromJson<double>(json['progress']),
       status: serializer.fromJson<String>(json['status']),
@@ -351,6 +380,7 @@ class DownloadVideoInfo extends DataClass
       'pic': serializer.toJson<String>(pic),
       'cid': serializer.toJson<int>(cid),
       'title': serializer.toJson<String>(title),
+      'videoTitle': serializer.toJson<String>(videoTitle),
       'uri': serializer.toJson<String?>(uri),
       'progress': serializer.toJson<double>(progress),
       'status': serializer.toJson<String>(status),
@@ -365,6 +395,7 @@ class DownloadVideoInfo extends DataClass
     String? pic,
     int? cid,
     String? title,
+    String? videoTitle,
     Value<String?> uri = const Value.absent(),
     double? progress,
     String? status,
@@ -376,6 +407,7 @@ class DownloadVideoInfo extends DataClass
     pic: pic ?? this.pic,
     cid: cid ?? this.cid,
     title: title ?? this.title,
+    videoTitle: videoTitle ?? this.videoTitle,
     uri: uri.present ? uri.value : this.uri,
     progress: progress ?? this.progress,
     status: status ?? this.status,
@@ -389,6 +421,9 @@ class DownloadVideoInfo extends DataClass
       pic: data.pic.present ? data.pic.value : this.pic,
       cid: data.cid.present ? data.cid.value : this.cid,
       title: data.title.present ? data.title.value : this.title,
+      videoTitle: data.videoTitle.present
+          ? data.videoTitle.value
+          : this.videoTitle,
       uri: data.uri.present ? data.uri.value : this.uri,
       progress: data.progress.present ? data.progress.value : this.progress,
       status: data.status.present ? data.status.value : this.status,
@@ -405,6 +440,7 @@ class DownloadVideoInfo extends DataClass
           ..write('pic: $pic, ')
           ..write('cid: $cid, ')
           ..write('title: $title, ')
+          ..write('videoTitle: $videoTitle, ')
           ..write('uri: $uri, ')
           ..write('progress: $progress, ')
           ..write('status: $status, ')
@@ -421,6 +457,7 @@ class DownloadVideoInfo extends DataClass
     pic,
     cid,
     title,
+    videoTitle,
     uri,
     progress,
     status,
@@ -436,6 +473,7 @@ class DownloadVideoInfo extends DataClass
           other.pic == this.pic &&
           other.cid == this.cid &&
           other.title == this.title &&
+          other.videoTitle == this.videoTitle &&
           other.uri == this.uri &&
           other.progress == this.progress &&
           other.status == this.status &&
@@ -449,6 +487,7 @@ class DownloadVideosCompanion extends UpdateCompanion<DownloadVideoInfo> {
   final Value<String> pic;
   final Value<int> cid;
   final Value<String> title;
+  final Value<String> videoTitle;
   final Value<String?> uri;
   final Value<double> progress;
   final Value<String> status;
@@ -460,6 +499,7 @@ class DownloadVideosCompanion extends UpdateCompanion<DownloadVideoInfo> {
     this.pic = const Value.absent(),
     this.cid = const Value.absent(),
     this.title = const Value.absent(),
+    this.videoTitle = const Value.absent(),
     this.uri = const Value.absent(),
     this.progress = const Value.absent(),
     this.status = const Value.absent(),
@@ -472,6 +512,7 @@ class DownloadVideosCompanion extends UpdateCompanion<DownloadVideoInfo> {
     required String pic,
     required int cid,
     required String title,
+    required String videoTitle,
     this.uri = const Value.absent(),
     this.progress = const Value.absent(),
     this.status = const Value.absent(),
@@ -480,7 +521,8 @@ class DownloadVideosCompanion extends UpdateCompanion<DownloadVideoInfo> {
        aid = Value(aid),
        pic = Value(pic),
        cid = Value(cid),
-       title = Value(title);
+       title = Value(title),
+       videoTitle = Value(videoTitle);
   static Insertable<DownloadVideoInfo> custom({
     Expression<int>? id,
     Expression<String>? bvid,
@@ -488,6 +530,7 @@ class DownloadVideosCompanion extends UpdateCompanion<DownloadVideoInfo> {
     Expression<String>? pic,
     Expression<int>? cid,
     Expression<String>? title,
+    Expression<String>? videoTitle,
     Expression<String>? uri,
     Expression<double>? progress,
     Expression<String>? status,
@@ -500,6 +543,7 @@ class DownloadVideosCompanion extends UpdateCompanion<DownloadVideoInfo> {
       if (pic != null) 'pic': pic,
       if (cid != null) 'cid': cid,
       if (title != null) 'title': title,
+      if (videoTitle != null) 'video_title': videoTitle,
       if (uri != null) 'uri': uri,
       if (progress != null) 'progress': progress,
       if (status != null) 'status': status,
@@ -514,6 +558,7 @@ class DownloadVideosCompanion extends UpdateCompanion<DownloadVideoInfo> {
     Value<String>? pic,
     Value<int>? cid,
     Value<String>? title,
+    Value<String>? videoTitle,
     Value<String?>? uri,
     Value<double>? progress,
     Value<String>? status,
@@ -526,6 +571,7 @@ class DownloadVideosCompanion extends UpdateCompanion<DownloadVideoInfo> {
       pic: pic ?? this.pic,
       cid: cid ?? this.cid,
       title: title ?? this.title,
+      videoTitle: videoTitle ?? this.videoTitle,
       uri: uri ?? this.uri,
       progress: progress ?? this.progress,
       status: status ?? this.status,
@@ -554,6 +600,9 @@ class DownloadVideosCompanion extends UpdateCompanion<DownloadVideoInfo> {
     if (title.present) {
       map['title'] = Variable<String>(title.value);
     }
+    if (videoTitle.present) {
+      map['video_title'] = Variable<String>(videoTitle.value);
+    }
     if (uri.present) {
       map['uri'] = Variable<String>(uri.value);
     }
@@ -578,6 +627,7 @@ class DownloadVideosCompanion extends UpdateCompanion<DownloadVideoInfo> {
           ..write('pic: $pic, ')
           ..write('cid: $cid, ')
           ..write('title: $title, ')
+          ..write('videoTitle: $videoTitle, ')
           ..write('uri: $uri, ')
           ..write('progress: $progress, ')
           ..write('status: $status, ')
@@ -1432,6 +1482,7 @@ typedef $$DownloadVideosTableCreateCompanionBuilder =
       required String pic,
       required int cid,
       required String title,
+      required String videoTitle,
       Value<String?> uri,
       Value<double> progress,
       Value<String> status,
@@ -1445,6 +1496,7 @@ typedef $$DownloadVideosTableUpdateCompanionBuilder =
       Value<String> pic,
       Value<int> cid,
       Value<String> title,
+      Value<String> videoTitle,
       Value<String?> uri,
       Value<double> progress,
       Value<String> status,
@@ -1487,6 +1539,11 @@ class $$DownloadVideosTableFilterComposer
 
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoTitle => $composableBuilder(
+    column: $table.videoTitle,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1550,6 +1607,11 @@ class $$DownloadVideosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get videoTitle => $composableBuilder(
+    column: $table.videoTitle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get uri => $composableBuilder(
     column: $table.uri,
     builder: (column) => ColumnOrderings(column),
@@ -1597,6 +1659,11 @@ class $$DownloadVideosTableAnnotationComposer
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get videoTitle => $composableBuilder(
+    column: $table.videoTitle,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get uri =>
       $composableBuilder(column: $table.uri, builder: (column) => column);
@@ -1654,6 +1721,7 @@ class $$DownloadVideosTableTableManager
                 Value<String> pic = const Value.absent(),
                 Value<int> cid = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<String> videoTitle = const Value.absent(),
                 Value<String?> uri = const Value.absent(),
                 Value<double> progress = const Value.absent(),
                 Value<String> status = const Value.absent(),
@@ -1665,6 +1733,7 @@ class $$DownloadVideosTableTableManager
                 pic: pic,
                 cid: cid,
                 title: title,
+                videoTitle: videoTitle,
                 uri: uri,
                 progress: progress,
                 status: status,
@@ -1678,6 +1747,7 @@ class $$DownloadVideosTableTableManager
                 required String pic,
                 required int cid,
                 required String title,
+                required String videoTitle,
                 Value<String?> uri = const Value.absent(),
                 Value<double> progress = const Value.absent(),
                 Value<String> status = const Value.absent(),
@@ -1689,6 +1759,7 @@ class $$DownloadVideosTableTableManager
                 pic: pic,
                 cid: cid,
                 title: title,
+                videoTitle: videoTitle,
                 uri: uri,
                 progress: progress,
                 status: status,

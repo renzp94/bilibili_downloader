@@ -18,6 +18,7 @@ class DownloadVideos extends Table {
   TextColumn get pic => text()();
   IntColumn get cid => integer()();
   TextColumn get title => text()();
+  TextColumn get videoTitle => text()();
   TextColumn get uri => text().nullable()();
   RealColumn get progress => real().withDefault(const Constant(0))();
   TextColumn get status =>
@@ -56,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -76,6 +77,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 6) {
             await m.addColumn(appSettings, appSettings.quality);
+          }
+          if (from < 7) {
+            await m.addColumn(downloadVideos, downloadVideos.videoTitle);
           }
         },
       );

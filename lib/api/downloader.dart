@@ -35,12 +35,17 @@ Future<void> downloadWithSplits({
     return _PartRange(index: i, start: start, end: end);
   }).whereType<_PartRange>().toList();
 
-  var completed = 0.0;
+  final downloaded = List<int>.filled(ranges.length, 0);
+  final partSizes = ranges.map((r) => r.end - r.start + 1).toList();
+
+  int totalDownloaded() => downloaded.fold(0, (a, b) => a + b);
+
   await Future.wait(ranges.map((r) async {
-    final partFile = File('${workDir.path}/part_${r.index}');
-    if (partFile.existsSync() && partFile.lengthSync() == r.end - r.start + 1) {
-      completed += 1 / ranges.length;
-      onProgress?.call(completed);
+    final i = r.index;
+    final partFile = File('${workDir.path}/part_${i}');
+    if (partFile.existsSync() && partFile.lengthSync() == partSizes[i]) {
+      downloaded[i] = partSizes[i];
+      onProgress?.call(totalDownloaded() / totalSize);
       return;
     }
     await Dio().download(
@@ -55,13 +60,14 @@ Future<void> downloadWithSplits({
         },
         responseType: ResponseType.plain,
       ),
-      onReceiveProgress: (c, t) {
-        final partProgress = (completed + (c / t) / ranges.length);
-        onProgress?.call(partProgress.clamp(0, 1));
+      onReceiveProgress: (c, _) {
+        downloaded[i] = c;
+        final p = totalDownloaded() / totalSize;
+        onProgress?.call(p.clamp(0.0, 1.0));
       },
     );
-    completed += 1 / ranges.length;
-    onProgress?.call(completed.clamp(0, 1));
+    downloaded[i] = partSizes[i];
+    onProgress?.call(totalDownloaded() / totalSize);
   }));
 
   // 二进制拼接

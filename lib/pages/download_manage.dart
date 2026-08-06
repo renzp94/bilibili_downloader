@@ -89,8 +89,8 @@ class _DownloadManagePageState
     try {
       final cancelToken = CancelToken();
       _db.cancelTokens[video.id] = cancelToken;
-      final outputPath =
-          '${_settings.downloadDir}/${video.title}.flv';
+      Directory(_videoDir(video)).createSync(recursive: true);
+      final outputPath = _videoPath(video);
       final segments = await _fetchSegmentsWithRetry(
           video.bvid, video.cid);
       if (segments.isEmpty)
@@ -169,8 +169,7 @@ class _DownloadManagePageState
       DownloadVideoInfo video) async {
     final totalSize = segments
         .fold<int>(0, (s, e) => s + e.size);
-    final segDir =
-        '${_settings.downloadDir}/.${video.title}.flv_segs';
+    final segDir = '.${_videoPath(video)}_segs';
     final workDir = Directory(segDir);
     if (!workDir.existsSync())
       workDir.createSync(recursive: true);
@@ -238,6 +237,7 @@ class _DownloadManagePageState
           pic: e.pic,
           cid: e.cid,
           title: e.title,
+          videoTitle: e.videoTitle,
           uri: e.uri,
           progress: progress,
           status: status,
@@ -346,6 +346,12 @@ class _DownloadManagePageState
     }
   }
 
+  String _videoDir(DownloadVideoInfo video) =>
+      '${_settings.downloadDir}/${video.videoTitle}';
+
+  String _videoPath(DownloadVideoInfo video) =>
+      '${_videoDir(video)}/${video.title}.flv';
+
   // ── 删除 ──
 
   Future<bool?> _confirmDelete(
@@ -420,15 +426,13 @@ class _DownloadManagePageState
         });
   }
 
-  void _deleteFile(
-      DownloadVideoInfo video) {
-    final f = File(
-        '${_settings.downloadDir}/${video.title}.flv');
+  void _deleteFile(DownloadVideoInfo video) {
+    final f = File(_videoPath(video));
     if (f.existsSync()) f.deleteSync();
-    final d = Directory(
-        '${_settings.downloadDir}/.${video.title}.flv_parts');
-    if (d.existsSync())
-      d.deleteSync(recursive: true);
+    final d = Directory('.${_videoPath(video)}_parts');
+    if (d.existsSync()) d.deleteSync(recursive: true);
+    final s = Directory('.${_videoPath(video)}_segs');
+    if (s.existsSync()) s.deleteSync(recursive: true);
   }
 
   Future<void> _deleteVideo(
@@ -466,6 +470,12 @@ class _DownloadManagePageState
     await _db.clearAllVideos();
     setState(() => _downloadList.clear());
   }
+
+  // ═══ UI ═══
+
+  final Set<int> _expandedGroups = {};
+
+  String _baseTitle(DownloadVideoInfo v) => v.videoTitle;
 
   // ═══ UI ═══
 
@@ -691,19 +701,114 @@ class _DownloadManagePageState
     );
   }
 
-  Widget _buildList(
-      List<DownloadVideoInfo> items) {
+  Widget _buildList(List<DownloadVideoInfo> items) {
     if (items.isEmpty) {
       return const Center(
         child: Text('暂无数据',
-            style: TextStyle(
-                color: Colors.white24)),
+            style: TextStyle(color: Colors.white24)),
       );
     }
+    // 按 aid 分组（保持顺序，用 Map 记录每个 aid 的项）
+    final groups = <int, List<DownloadVideoInfo>>{};
+    final groupOrder = <int>[];
+    for (final v in items) {
+      if (!groups.containsKey(v.aid)) {
+        groups[v.aid] = [];
+        groupOrder.add(v.aid);
+      }
+      groups[v.aid]!.add(v);
+    }
+
     return ListView.builder(
-      itemCount: items.length,
-      itemBuilder: (_, i) =>
-          _buildItem(items[i]),
+      itemCount: groupOrder.length,
+      itemBuilder: (_, i) {
+        final aid = groupOrder[i];
+        final group = groups[aid]!;
+        final expanded = _expandedGroups.contains(aid);
+        final first = group.first;
+        final baseName = _baseTitle(first);
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 组头
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => setState(() {
+                    if (expanded) {
+                      _expandedGroups.remove(aid);
+                    } else {
+                      _expandedGroups.add(aid);
+                    }
+                  }),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.network(
+                            first.pic,
+                            height: 36, width: 64,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => Container(
+                                height: 36, width: 64,
+                                color: Colors.white.withValues(alpha: 0.04)),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(baseName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.white70,
+                                      fontWeight: FontWeight.w500)),
+                              const SizedBox(height: 2),
+                              Text('${group.length} 个视频',
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white38)),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          expanded
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
+                          color: Colors.white38,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // 折叠内容
+                if (expanded)
+                  ...group.map((v) => Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                        child: _buildItem(v),
+                      )),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -717,15 +822,10 @@ class _DownloadManagePageState
             item.status == 'pause';
 
     return Container(
-      margin:
-          const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius:
-            BorderRadius.circular(10),
-        border: Border.all(
-            color: Colors.white
-                .withValues(alpha: 0.06)),
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(8),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -852,8 +952,7 @@ class _DownloadManagePageState
         actions.add(_iconBtn(
             Icons.folder_open, '打开目录',
             () {
-          final dir = Directory(
-              _settings.downloadDir);
+          final dir = Directory(_videoDir(item));
           if (!dir.existsSync())
             dir.createSync(
                 recursive: true);

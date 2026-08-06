@@ -83,6 +83,7 @@ class _HomePageState extends State<HomePage>
                   aid: data['aid'],
                   pic: pic,
                   cid: pages[i]['cid'],
+                  videoTitle: title,
                   title: pages.length > 1
                       ? 'P${i + 1} ${pages[i]['part']}'
                       : title,
@@ -146,6 +147,7 @@ class _HomePageState extends State<HomePage>
                 pic: item.pic,
                 cid: item.cid,
                 title: item.title,
+                videoTitle: item.videoTitle,
                 status: Value(item.status),
               ))
           .toList());
@@ -387,12 +389,15 @@ class _HomePageState extends State<HomePage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          onTap: () => setState(() {
-            _list.clear();
-            _videoTitle = null;
-            _videoPic = null;
-            _checkedCids.clear();
-          }),
+          onTap: () {
+            setState(() {
+              _list.clear();
+              _videoTitle = null;
+              _videoPic = null;
+              _checkedCids.clear();
+            });
+            _loadHistory();
+          },
           child: const Padding(
             padding: EdgeInsets.only(bottom: 8),
             child: Row(
