@@ -39,7 +39,7 @@ class AsideMenu extends StatelessWidget {
                 Image.asset('assets/images/logo.png', height: 28, width: 28),
                 SizedBox(width: 12),
                 Text(
-                  'BiliDown',
+                  'biliDown',
                   style: TextStyle(
                     fontFamily: 'PressStart2P',
                     fontSize: 14,

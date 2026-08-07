@@ -22,7 +22,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-        title: "BiliDown",
+        title: "biliDown",
         theme: ThemeData.dark().copyWith(
           scaffoldBackgroundColor: const Color(0xFF0F0F1A),
           dialogTheme: const DialogThemeData(

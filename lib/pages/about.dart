@@ -1,10 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../utils/tools.dart';
 
-class AboutPage extends StatelessWidget {
+class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
+
+  @override
+  State<AboutPage> createState() => _AboutPageState();
+}
+
+class _AboutPageState extends State<AboutPage> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  void _loadVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) setState(() => _version = 'V${info.version}');
+  }
 
   static const _repoUrl = 'https://github.com/renzp94/bilibili_downloader';
 
@@ -22,7 +41,7 @@ class AboutPage extends StatelessWidget {
                   height: 80, width: 80),
             ),
             const SizedBox(height: 16),
-            const Text('BiliDown',
+            const Text('biliDown',
                 style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -52,7 +71,8 @@ class AboutPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _infoRow(Icons.info_outline, '版本', 'V0.1.0'),
+          _infoRow(Icons.info_outline, '版本',
+              _version.isNotEmpty ? _version : '...'),
           const Divider(height: 28, color: Colors.white12),
           _infoRow(Icons.person_outline, '作者', 'renzp94'),
           const Divider(height: 28, color: Colors.white12),
