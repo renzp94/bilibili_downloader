@@ -163,9 +163,10 @@ class AppDatabase extends _$AppDatabase {
 Future<String> _getDefaultDownloadDir() async {
   Directory? appDownloadDir = await getDownloadsDirectory();
   appDownloadDir ??= await getApplicationDocumentsDirectory();
-  final segments = appDownloadDir.path.split('/')..removeLast();
-  segments.add(defaultDownloadDir);
-  return segments.join('/');
+  // 取下载目录的父目录再拼 biliDown。不能用 split('/')：Windows 的分隔符是 '\'，
+  // 拆不开会得到一个相对路径。
+  return '${appDownloadDir.parent.path}'
+      '${Platform.pathSeparator}$defaultDownloadDir';
 }
 
 LazyDatabase _openConnection() {
