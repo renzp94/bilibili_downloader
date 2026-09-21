@@ -6,16 +6,18 @@ import 'package:get/get.dart';
 import '../widgets/aside_menu.dart';
 
 class LayoutAside extends StatelessWidget {
-  const LayoutAside({Key? key}) : super(key: key);
+  const LayoutAside({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() => AsideMenu(
-          data: routes
-              .map((e) => AsideMenuData(title: e.title, icon: e.icon))
-              .toList(),
-          selectedIndex: Store.to.pageControllerIndex.value,
-          onItemTap: (i) => Store.to.animateToPage(Pages.values[i]),
-        ));
+    return Obx(
+      () => AsideMenu(
+        data: routes
+            .map((e) => AsideMenuData(title: e.title, icon: e.icon))
+            .toList(),
+        selectedIndex: Store.to.pageControllerIndex.value,
+        onItemTap: (i) => Store.to.animateToPage(Pages.values[i]),
+      ),
+    );
   }
 }

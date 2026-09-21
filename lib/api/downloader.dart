@@ -13,13 +13,19 @@ Future<void> downloadWithSplits({
   void Function(double progress)? onProgress,
 }) async {
   // HEAD 请求获取文件总大小
-  final headResponse = await Dio().head(url, options: Options(
-    headers: {
-      'Referer': 'https://bilibili.com',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    },
-  ));
-  final totalSize = int.parse(headResponse.headers.value('content-length') ?? '0');
+  final headResponse = await Dio().head(
+    url,
+    options: Options(
+      headers: {
+        'Referer': 'https://bilibili.com',
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    ),
+  );
+  final totalSize = int.parse(
+    headResponse.headers.value('content-length') ?? '0',
+  );
   if (totalSize == 0) throw Exception('无法获取文件大小');
 
   final outputFile = File(outputPath);
@@ -40,35 +46,38 @@ Future<void> downloadWithSplits({
 
   int totalDownloaded() => downloaded.fold(0, (a, b) => a + b);
 
-  await Future.wait(ranges.map((r) async {
-    final i = r.index;
-    final partFile = File('${workDir.path}/part_${i}');
-    if (partFile.existsSync() && partFile.lengthSync() == partSizes[i]) {
+  await Future.wait(
+    ranges.map((r) async {
+      final i = r.index;
+      final partFile = File('${workDir.path}/part_$i');
+      if (partFile.existsSync() && partFile.lengthSync() == partSizes[i]) {
+        downloaded[i] = partSizes[i];
+        onProgress?.call(totalDownloaded() / totalSize);
+        return;
+      }
+      await Dio().download(
+        url,
+        partFile.path,
+        cancelToken: cancelToken,
+        options: Options(
+          headers: {
+            'Range': 'bytes=${r.start}-${r.end}',
+            'Referer': 'https://bilibili.com',
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
+          responseType: ResponseType.plain,
+        ),
+        onReceiveProgress: (c, _) {
+          downloaded[i] = c;
+          final p = totalDownloaded() / totalSize;
+          onProgress?.call(p.clamp(0.0, 1.0));
+        },
+      );
       downloaded[i] = partSizes[i];
       onProgress?.call(totalDownloaded() / totalSize);
-      return;
-    }
-    await Dio().download(
-      url,
-      partFile.path,
-      cancelToken: cancelToken,
-      options: Options(
-        headers: {
-          'Range': 'bytes=${r.start}-${r.end}',
-          'Referer': 'https://bilibili.com',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
-        responseType: ResponseType.plain,
-      ),
-      onReceiveProgress: (c, _) {
-        downloaded[i] = c;
-        final p = totalDownloaded() / totalSize;
-        onProgress?.call(p.clamp(0.0, 1.0));
-      },
-    );
-    downloaded[i] = partSizes[i];
-    onProgress?.call(totalDownloaded() / totalSize);
-  }));
+    }),
+  );
 
   // 二进制拼接
   final sink = outputFile.openWrite();
@@ -86,5 +95,9 @@ class _PartRange {
   final int index;
   final int start;
   final int end;
-  const _PartRange({required this.index, required this.start, required this.end});
+  const _PartRange({
+    required this.index,
+    required this.start,
+    required this.end,
+  });
 }

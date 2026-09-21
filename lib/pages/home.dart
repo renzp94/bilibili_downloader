@@ -1,4 +1,5 @@
-import 'package:bilibili_downloader/constant.dart';
+import 'dart:developer' as dev;
+
 import 'package:bilibili_downloader/models/database.dart';
 import 'package:bilibili_downloader/store/store.dart';
 import 'package:bilibili_downloader/utils/tools.dart';
@@ -28,6 +29,7 @@ class _HomePageState extends State<HomePage>
   late Settings _settings;
 
   static const _accent = Color(0xFF0275EE);
+  static final _bvidRegExp = RegExp(r'BV[0-9A-Za-z]{10}');
 
   @override
   void initState() {
@@ -51,10 +53,6 @@ class _HomePageState extends State<HomePage>
   void _onSearch() {
     final url = _urlController.text.trim();
     if (url.isEmpty) return;
-    if (!url.contains(videoUrlPrefix)) {
-      warningTips('请输入正确的B站视频链接');
-      return;
-    }
     _getVideoList(url);
   }
 
@@ -64,9 +62,13 @@ class _HomePageState extends State<HomePage>
   }
 
   Future<void> _getVideoList(String url) async {
+    final bvid = _parseBvid(url);
+    if (bvid == null) {
+      warningTips('请输入正确的B站视频链接');
+      return;
+    }
     setState(() => _searching = true);
     try {
-      final bvid = _parseBvid(url);
       final res = await fetchVideoList(bvid);
       final data = res.data['data'];
       final title = data['title'] as String;
@@ -76,40 +78,34 @@ class _HomePageState extends State<HomePage>
         _videoPic = pic;
         final pages = data['pages'] as List;
         _list = List.generate(
-            pages.length,
-            (i) => DownloadVideoInfo(
-                  id: -1,
-                  bvid: bvid,
-                  aid: data['aid'],
-                  pic: pic,
-                  cid: pages[i]['cid'],
-                  videoTitle: title,
-                  title: pages.length > 1
-                      ? 'P${i + 1} ${pages[i]['part']}'
-                      : title,
-                  progress: 0,
-                  status: i < _settings.maxDownloadCount
-                      ? 'downloading'
-                      : 'wait',
-                  errorMsg: null,
-                ));
+          pages.length,
+          (i) => DownloadVideoInfo(
+            id: -1,
+            bvid: bvid,
+            aid: data['aid'],
+            pic: pic,
+            cid: pages[i]['cid'],
+            videoTitle: title,
+            title: pages.length > 1 ? 'P${i + 1} ${pages[i]['part']}' : title,
+            progress: 0,
+            status: i < _settings.maxDownloadCount ? 'downloading' : 'wait',
+            errorMsg: null,
+          ),
+        );
         _checkedCids.clear();
         _checkedCids.addAll(_list.map((e) => e.cid));
       });
       Get.find<AppDatabase>().addHistory(url, title, pic);
-    } catch (_) {
+    } catch (e) {
+      dev.log('获取视频信息失败: $e');
       warningTips('获取视频信息失败');
     } finally {
       setState(() => _searching = false);
     }
   }
 
-  String _parseBvid(String url) {
-    final start = videoUrlPrefix.length;
-    var end = url.length;
-    if (url.contains('?')) end = url.indexOf('?');
-    return url.substring(start, end).replaceAll('/', '');
-  }
+  /// 从链接或分享文本中提取 BV 号，找不到返回 null
+  String? _parseBvid(String url) => _bvidRegExp.firstMatch(url)?.group(0);
 
   void _toggleItem(DownloadVideoInfo item) {
     setState(() {
@@ -133,15 +129,15 @@ class _HomePageState extends State<HomePage>
 
   Future<void> _onDownload() async {
     if (_checkedCids.isEmpty) return;
-    final selected =
-        _list.where((e) => _checkedCids.contains(e.cid)).toList();
+    final selected = _list.where((e) => _checkedCids.contains(e.cid)).toList();
     final db = Get.find<AppDatabase>();
     final existingCids = (await db.allVideos()).map((e) => e.cid).toSet();
-    final toAdd =
-        selected.where((e) => !existingCids.contains(e.cid)).toList();
+    final toAdd = selected.where((e) => !existingCids.contains(e.cid)).toList();
     if (toAdd.isNotEmpty) {
-      await db.addVideos(toAdd
-          .map((item) => DownloadVideosCompanion.insert(
+      await db.addVideos(
+        toAdd
+            .map(
+              (item) => DownloadVideosCompanion.insert(
                 bvid: item.bvid,
                 aid: item.aid,
                 pic: item.pic,
@@ -149,8 +145,10 @@ class _HomePageState extends State<HomePage>
                 title: item.title,
                 videoTitle: item.videoTitle,
                 status: Value(item.status),
-              ))
-          .toList());
+              ),
+            )
+            .toList(),
+      );
     }
     Store.to.animateToPage(Pages.downloadManage);
   }
@@ -158,17 +156,17 @@ class _HomePageState extends State<HomePage>
   @override
   bool get wantKeepAlive => true;
 
-  Widget _glassCard(
-      {required Widget child,
-      EdgeInsets? padding,
-      BorderRadius? radius}) {
+  Widget _glassCard({
+    required Widget child,
+    EdgeInsets? padding,
+    BorderRadius? radius,
+  }) {
     return Container(
       padding: padding ?? const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
         borderRadius: radius ?? BorderRadius.circular(10),
-        border:
-            Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -190,10 +188,8 @@ class _HomePageState extends State<HomePage>
         children: [
           _buildSearchBar(),
           const SizedBox(height: 20),
-          Expanded(
-              child: hasResult ? _buildResult() : _buildEmpty()),
-          if (hasResult && _checkedCids.isNotEmpty)
-            _buildBottomBar(),
+          Expanded(child: hasResult ? _buildResult() : _buildEmpty()),
+          if (hasResult && _checkedCids.isNotEmpty) _buildBottomBar(),
         ],
       ),
     );
@@ -206,29 +202,30 @@ class _HomePageState extends State<HomePage>
           child: TextField(
             controller: _urlController,
             onSubmitted: (_) => _onSearch(),
-            style: const TextStyle(
-                color: Colors.white, fontSize: 14),
+            style: const TextStyle(color: Colors.white, fontSize: 14),
             cursorColor: _accent,
             decoration: InputDecoration(
-              prefixIcon: const Icon(Icons.link,
-                  size: 20, color: Colors.white38),
+              prefixIcon: const Icon(
+                Icons.link,
+                size: 20,
+                color: Colors.white38,
+              ),
               hintText: '粘贴B站视频链接...',
-              hintStyle: const TextStyle(
-                  color: Colors.white24, fontSize: 14),
+              hintStyle: const TextStyle(color: Colors.white24, fontSize: 14),
               filled: true,
-              fillColor:
-                  Colors.white.withValues(alpha: 0.06),
+              fillColor: Colors.white.withValues(alpha: 0.06),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                    color: _accent.withValues(alpha: 0.4)),
+                borderSide: BorderSide(color: _accent.withValues(alpha: 0.4)),
               ),
               contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 14),
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
         ),
@@ -239,21 +236,23 @@ class _HomePageState extends State<HomePage>
             onPressed: _searching ? null : _onSearch,
             icon: _searching
                 ? const SizedBox(
-                    width: 16, height: 16,
+                    width: 16,
+                    height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white))
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Icon(Icons.search, size: 20),
             label: const Text('搜索'),
             style: ElevatedButton.styleFrom(
               backgroundColor: _accent,
               foregroundColor: Colors.white,
-              disabledBackgroundColor:
-                  _accent.withValues(alpha: 0.3),
+              disabledBackgroundColor: _accent.withValues(alpha: 0.3),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 28, vertical: 14),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
             ),
           ),
         ),
@@ -267,16 +266,17 @@ class _HomePageState extends State<HomePage>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.video_library_outlined,
-                size: 64, color: Colors.white12),
+            Icon(Icons.video_library_outlined, size: 64, color: Colors.white12),
             const SizedBox(height: 16),
-            const Text('粘贴B站视频链接开始下载',
-                style: TextStyle(
-                    fontSize: 15, color: Colors.white38)),
+            const Text(
+              '粘贴B站视频链接开始下载',
+              style: TextStyle(fontSize: 15, color: Colors.white38),
+            ),
             const SizedBox(height: 6),
-            const Text('支持单个视频或多P视频',
-                style: TextStyle(
-                    fontSize: 13, color: Colors.white24)),
+            const Text(
+              '支持单个视频或多P视频',
+              style: TextStyle(fontSize: 13, color: Colors.white24),
+            ),
           ],
         ),
       );
@@ -288,26 +288,28 @@ class _HomePageState extends State<HomePage>
           padding: const EdgeInsets.only(bottom: 10),
           child: Row(
             children: [
-              const Icon(Icons.history, size: 15,
-                  color: Colors.white38),
+              const Icon(Icons.history, size: 15, color: Colors.white38),
               const SizedBox(width: 8),
-              const Text('搜索历史',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white38,
-                      fontWeight: FontWeight.w500)),
+              const Text(
+                '搜索历史',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white38,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               const Spacer(),
               GestureDetector(
                 onTap: () async {
-                  await Get.find<AppDatabase>()
-                      .clearHistory();
-                  if (mounted)
+                  await Get.find<AppDatabase>().clearHistory();
+                  if (mounted) {
                     setState(() => _history = []);
+                  }
                 },
-                child: const Text('清空',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white24)),
+                child: const Text(
+                  '清空',
+                  style: TextStyle(fontSize: 12, color: Colors.white24),
+                ),
               ),
             ],
           ),
@@ -315,8 +317,7 @@ class _HomePageState extends State<HomePage>
         Expanded(
           child: ListView.builder(
             itemCount: _history.length,
-            itemBuilder: (_, i) =>
-                _buildHistoryItem(_history[i]),
+            itemBuilder: (_, i) => _buildHistoryItem(_history[i]),
           ),
         ),
       ],
@@ -334,47 +335,58 @@ class _HomePageState extends State<HomePage>
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(6),
-                child: Image.network(h.pic,
-                    height: 40, width: 72,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Container(
-                        height: 40, width: 72,
-                        color: Colors.white
-                            .withValues(alpha: 0.04),
-                        child: const Icon(
-                            Icons.broken_image,
-                            size: 14,
-                            color: Colors.white24))),
+                child: Image.network(
+                  h.pic,
+                  height: 40,
+                  width: 72,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(
+                    height: 40,
+                    width: 72,
+                    color: Colors.white.withValues(alpha: 0.04),
+                    child: const Icon(
+                      Icons.broken_image,
+                      size: 14,
+                      color: Colors.white24,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(h.title, maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.white70)),
+                    Text(
+                      h.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.white70,
+                      ),
+                    ),
                     const SizedBox(height: 3),
-                    Text(h.url, maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.white24)),
+                    Text(
+                      h.url,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white24,
+                      ),
+                    ),
                   ],
                 ),
               ),
               GestureDetector(
                 onTap: () async {
-                  await Get.find<AppDatabase>()
-                      .deleteHistory(h.id);
+                  await Get.find<AppDatabase>().deleteHistory(h.id);
                   _loadHistory();
                 },
                 child: const Padding(
                   padding: EdgeInsets.all(4),
-                  child: Icon(Icons.close, size: 14,
-                      color: Colors.white24),
+                  child: Icon(Icons.close, size: 14, color: Colors.white24),
                 ),
               ),
             ],
@@ -403,12 +415,12 @@ class _HomePageState extends State<HomePage>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.arrow_back_ios,
-                    size: 14, color: Colors.white38),
+                Icon(Icons.arrow_back_ios, size: 14, color: Colors.white38),
                 SizedBox(width: 4),
-                Text('返回',
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.white38)),
+                Text(
+                  '返回',
+                  style: TextStyle(fontSize: 12, color: Colors.white38),
+                ),
               ],
             ),
           ),
@@ -418,8 +430,7 @@ class _HomePageState extends State<HomePage>
         Expanded(
           child: ListView.builder(
             itemCount: _list.length,
-            itemBuilder: (_, i) =>
-                _buildListItem(_list[i]),
+            itemBuilder: (_, i) => _buildListItem(_list[i]),
           ),
         ),
       ],
@@ -428,39 +439,43 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildResultHeader() {
     return _glassCard(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
         children: [
           if (_videoPic != null) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(6),
-              child: Image.network(_videoPic!,
-                  height: 40, width: 70,
-                  fit: BoxFit.cover),
+              child: Image.network(
+                _videoPic!,
+                height: 40,
+                width: 70,
+                fit: BoxFit.cover,
+              ),
             ),
             const SizedBox(width: 10),
           ],
           Expanded(
-            child: Text(_videoTitle ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Colors.white)),
+            child: Text(
+              _videoTitle ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: Colors.white,
+              ),
+            ),
           ),
           const SizedBox(width: 8),
           _textButton(
-            _checkedCids.length == _list.length
-                ? '取消全选'
-                : '全选',
+            _checkedCids.length == _list.length ? '取消全选' : '全选',
             _toggleAll,
           ),
           const SizedBox(width: 10),
-          Text('${_checkedCids.length}/${_list.length}',
-              style: const TextStyle(
-                  fontSize: 12, color: Colors.white38)),
+          Text(
+            '${_checkedCids.length}/${_list.length}',
+            style: const TextStyle(fontSize: 12, color: Colors.white38),
+          ),
         ],
       ),
     );
@@ -482,8 +497,7 @@ class _HomePageState extends State<HomePage>
                   ? _accent.withValues(alpha: 0.08)
                   : Colors.transparent,
               border: checked
-                  ? Border.all(
-                      color: _accent.withValues(alpha: 0.2))
+                  ? Border.all(color: _accent.withValues(alpha: 0.2))
                   : null,
             ),
             padding: const EdgeInsets.all(8),
@@ -493,33 +507,37 @@ class _HomePageState extends State<HomePage>
                   value: checked,
                   activeColor: _accent,
                   checkColor: Colors.white,
-                  side: BorderSide(
-                      color: checked
-                          ? _accent
-                          : Colors.white24),
+                  side: BorderSide(color: checked ? _accent : Colors.white24),
                   onChanged: (_) => _toggleItem(item),
                   visualDensity: VisualDensity.compact,
                 ),
                 const SizedBox(width: 4),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
-                  child: Image.network(item.pic,
-                      height: 54, width: 96,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(
-                          height: 54, width: 96,
-                          color: Colors.white.withValues(alpha: 0.04),
-                          child: const Icon(Icons.broken_image,
-                              color: Colors.white24))),
+                  child: Image.network(
+                    item.pic,
+                    height: 54,
+                    width: 96,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => Container(
+                      height: 54,
+                      width: 96,
+                      color: Colors.white.withValues(alpha: 0.04),
+                      child: const Icon(
+                        Icons.broken_image,
+                        color: Colors.white24,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(item.title,
-                      style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white70),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    item.title,
+                    style: const TextStyle(fontSize: 13, color: Colors.white70),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -538,15 +556,14 @@ class _HomePageState extends State<HomePage>
           child: ElevatedButton.icon(
             onPressed: _onDownload,
             icon: const Icon(Icons.download, size: 20),
-            label: Text(
-                '下载选中 (${_checkedCids.length}个)'),
+            label: Text('下载选中 (${_checkedCids.length}个)'),
             style: ElevatedButton.styleFrom(
               backgroundColor: _accent,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 32, vertical: 12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
             ),
           ),
         ),
@@ -558,11 +575,8 @@ class _HomePageState extends State<HomePage>
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 4, vertical: 2),
-        child: Text(text,
-            style: const TextStyle(
-                fontSize: 12, color: _accent)),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Text(text, style: const TextStyle(fontSize: 12, color: _accent)),
       ),
     );
   }
